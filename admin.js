@@ -1,36 +1,5 @@
-// IndexedDB Setup (same as script.js)
-let db;
+// admin.js - Modifikasi untuk Firebase
 let chartInstance = null;
-const dbName = 'LaporanAppDB';
-const dbVersion = 1;
-
-function openDB() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(dbName, dbVersion);
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => {
-      db = request.result;
-      resolve(db);
-    };
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result;
-      if (!db.objectStoreNames.contains('users')) {
-        db.createObjectStore('users', { keyPath: 'username' });
-      }
-      if (!db.objectStoreNames.contains('fasilitasReports')) {
-        db.createObjectStore('fasilitasReports', { keyPath: 'id', autoIncrement: true });
-      }
-      if (!db.objectStoreNames.contains('piketReports')) {
-        db.createObjectStore('piketReports', { keyPath: 'id', autoIncrement: true });
-      }
-    };
-  });
-}
-
-function getStore(storeName, mode = 'readonly') {
-  const transaction = db.transaction([storeName], mode);
-  return transaction.objectStore(storeName);
-}
 
 const Toast = Swal.mixin({
   toast: true,
@@ -57,487 +26,276 @@ function showToast(message, type = 'success') {
 function applyTheme(theme) {
   if (theme === 'dark') {
     document.body.classList.add('dark-mode');
-    document.getElementById('toggle-theme').checked = true;
   } else {
     document.body.classList.remove('dark-mode');
-    document.getElementById('toggle-theme').checked = false;
   }
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-  await openDB();
-
-  // Apply saved theme immediately
+document.addEventListener('DOMContentLoaded', () => {
+  // Apply theme
   const savedTheme = localStorage.getItem('theme') || 'light';
   applyTheme(savedTheme);
+  document.getElementById('toggle-theme').checked = savedTheme === 'dark';
 
-  // Toggle theme with animation
+  // Toggle theme
   document.getElementById('toggle-theme').addEventListener('change', (e) => {
-    if (e.target.checked) {
-      document.body.classList.add('dark-mode');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.body.classList.remove('dark-mode');
-      localStorage.setItem('theme', 'light');
-    }
+    const theme = e.target.checked ? 'dark' : 'light';
+    applyTheme(theme);
+    localStorage.setItem('theme', theme);
   });
 
-  // Admin login
+  const loginSection = document.getElementById('login-section');
+  const adminContent = document.getElementById('admin-content');
+
+  // Admin login (hardcode or from Firebase, here hardcode for simplicity, change password if needed)
   document.getElementById('admin-login-form').addEventListener('submit', (e) => {
     e.preventDefault();
+    const username = document.getElementById('admin-username').value;
     const password = document.getElementById('admin-password').value;
-    if (password === 'admin123') {
-      Toast.fire({
-        icon: "success",
-        title: "Login telah berhasil!"
-      });
-      document.getElementById('login-section').style.display = 'none';
-      document.getElementById('admin-content').style.display = 'block';
-      loadStudents();
-      loadReports();
-      loadStatistics();
-      loadChart();
+
+    if (username === 'admin' && password === 'admin2025') {
+      localStorage.setItem('adminLoggedIn', true);
+      loginSection.style.display = 'none';
+      adminContent.style.display = 'block';
+      loadAdminData();
+      showToast('Login admin berhasil!', 'success');
     } else {
-      showToast('Password salah!', 'danger');
+      showToast('Username atau password salah!', 'danger');
     }
   });
 
-  // Search and sort for fasilitas
-  document.getElementById('search-fasilitas').addEventListener('input', () => loadFasilitas());
-  document.getElementById('sort-fasilitas').addEventListener('change', () => loadFasilitas());
+  // Check if admin logged in
+  if (localStorage.getItem('adminLoggedIn')) {
+    loginSection.style.display = 'none';
+    adminContent.style.display = 'block';
+    loadAdminData();
+  } else {
+    loginSection.style.display = 'block';
+  }
 
-  // Search and sort for piket
-  document.getElementById('search-piket').addEventListener('input', () => loadPiket());
-  document.getElementById('sort-piket').addEventListener('change', () => loadPiket());
+  // Tab switching
+  document.getElementById('tab-laporan').addEventListener('click', () => switchTab('content-laporan'));
+  document.getElementById('tab-piket').addEventListener('click', () => switchTab('content-piket'));
+  document.getElementById('tab-student').addEventListener('click', () => switchTab('content-student'));
 
-  // Add student form
-  document.getElementById('add-student-form').addEventListener('submit', async (e) => {
+  function switchTab(id) {
+    document.querySelectorAll('[id^="content-"]').forEach(el => el.style.display = 'none');
+    document.getElementById(id).style.display = 'block';
+    document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + id.split('-')[1]).classList.add('active');
+  }
+
+  // Load data
+  function loadAdminData() {
+    // Load laporan fasilitas
+    firebase.database().ref('laporan_fasilitas').on('value', (snap) => {
+      const tbody = document.querySelector('#admin-fasilitas-table tbody');
+      tbody.innerHTML = '';
+      snap.forEach((child) => {
+        const report = child.val();
+        const key = child.key;
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${report.nama}</td>
+          <td>${report.kelas}</td>
+          <td>${report.lokasi}</td>
+          <td>${report.kategori}</td>
+          <td>${report.prioritas}</td>
+          <td>${report.deskripsi}</td>
+          <td><button class="btn btn-sm btn-info view-image" data-url="${report.foto}">Lihat</button></td>
+          <td>
+            <select class="form-select status-select" data-key="${key}">
+              <option value="baru" ${report.status === 'baru' ? 'selected' : ''}>Baru</option>
+              <option value="diproses" ${report.status === 'diproses' ? 'selected' : ''}>Diproses</option>
+              <option value="selesai" ${report.status === 'selesai' ? 'selected' : ''}>Selesai</option>
+            </select>
+          </td>
+          <td><button class="btn btn-sm btn-danger delete-report" data-key="${key}">Hapus</button></td>
+        `;
+        tbody.appendChild(row);
+      });
+      addEventListeners();
+      updateChart();
+    });
+
+    // Load absensi piket
+    firebase.database().ref('absensi_piket').on('value', (snap) => {
+      const tbody = document.querySelector('#admin-piket-table tbody');
+      tbody.innerHTML = '';
+      snap.forEach((child) => {
+        const report = child.val();
+        const key = child.key;
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${report.nama}</td>
+          <td>${report.kelas}</td>
+          <td>${report.tanggal}</td>
+          <td>${report.waktu}</td>
+          <td><button class="btn btn-sm btn-info view-image" data-url="${report.foto}">Lihat</button></td>
+          <td><button class="btn btn-sm btn-danger delete-report" data-key="${key}">Hapus</button></td>
+        `;
+        tbody.appendChild(row);
+      });
+      addEventListeners();
+    });
+
+    // Load students
+    firebase.database().ref('users').on('value', (snap) => {
+      const tbody = document.querySelector('#student-table tbody');
+      tbody.innerHTML = '';
+      snap.forEach((child) => {
+        const user = child.val();
+        if (user.username !== 'admin') {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${user.username}</td>
+            <td>${user.nama}</td>
+            <td>${user.kelas}</td>
+            <td>${user.phone || '-'}</td>
+            <td>
+              <button class="btn btn-sm btn-warning edit-student" data-username="${user.username}">Edit</button>
+              <button class="btn btn-sm btn-danger delete-student" data-username="${user.username}">Hapus</button>
+            </td>
+          `;
+          tbody.appendChild(row);
+        }
+      });
+      addEventListeners();
+    });
+  }
+
+  function addEventListeners() {
+    // View image
+    document.querySelectorAll('.view-image').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.getElementById('modalImage').src = e.target.dataset.url;
+        new bootstrap.Modal(document.getElementById('imageModal')).show();
+      });
+    });
+
+    // Change status
+    document.querySelectorAll('.status-select').forEach(select => {
+      select.addEventListener('change', (e) => {
+        const key = e.target.dataset.key;
+        firebase.database().ref('laporan_fasilitas/' + key).update({ status: e.target.value }).then(() => {
+          showToast('Status updated!');
+        });
+      });
+    });
+
+    // Delete report
+    document.querySelectorAll('.delete-report').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const key = e.target.dataset.key;
+        const ref = e.target.closest('table').id.includes('fasilitas') ? 'laporan_fasilitas' : 'absensi_piket';
+        Swal.fire({
+          title: 'Yakin hapus?',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Ya, hapus!'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            firebase.database().ref(ref + '/' + key).remove().then(() => {
+              showToast('Data dihapus!');
+            });
+          }
+        });
+      });
+    });
+
+    // Edit student
+    document.querySelectorAll('.edit-student').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const username = e.target.dataset.username;
+        firebase.database().ref('users/' + username).once('value').then((snap) => {
+          const user = snap.val();
+          document.getElementById('studentModalTitle').textContent = 'Edit Siswa';
+          document.getElementById('student-username').value = user.username;
+          document.getElementById('student-username').readOnly = true;
+          document.getElementById('student-password').value = user.password;
+          document.getElementById('student-nama').value = user.nama;
+          document.getElementById('student-kelas').value = user.kelas;
+          document.getElementById('student-phone').value = user.phone;
+          new bootstrap.Modal(document.getElementById('studentModal')).show();
+        });
+      });
+    });
+
+    // Delete student
+    document.querySelectorAll('.delete-student').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const username = e.target.dataset.username;
+        Swal.fire({
+          title: 'Yakin hapus siswa?',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Ya, hapus!'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            firebase.database().ref('users/' + username).remove().then(() => {
+              showToast('Siswa dihapus!');
+            });
+          }
+        });
+      });
+    });
+  }
+
+  // Add student button
+  document.getElementById('add-student-btn').addEventListener('click', () => {
+    document.getElementById('studentModalTitle').textContent = 'Tambah Siswa';
+    document.getElementById('student-form').reset();
+    document.getElementById('student-username').readOnly = false;
+    new bootstrap.Modal(document.getElementById('studentModal')).show();
+  });
+
+  // Student form
+  document.getElementById('student-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const username = document.getElementById('student-username').value;
     const password = document.getElementById('student-password').value;
-    const nisn = document.getElementById('student-nisn').value;
     const nama = document.getElementById('student-nama').value;
     const kelas = document.getElementById('student-kelas').value;
-    const phone = document.getElementById('student-phone').value || '';
+    const phone = document.getElementById('student-phone').value;
 
-    const store = getStore('users', 'readwrite');
-    const request = store.add({ username, password, nisn, nama, kelas, phone });
-    request.onsuccess = () => {
-      Toast.fire({
-        icon: "success",
-        title: "Siswa berhasil ditambahkan!"
-      });
-      document.getElementById('add-student-form').reset();
-      bootstrap.Modal.getInstance(document.getElementById('addStudentModal')).hide();
-      loadStudents();
-      loadStatistics();
+    const userData = {
+      username,
+      password,
+      nama,
+      kelas,
+      phone
     };
-    request.onerror = () => {
-      showToast('Username sudah ada!', 'danger');
-    };
-  });
 
-  // Store original username for editing
-  let originalUsername = '';
-
-  // Edit student form - Username can be edited now
-  document.getElementById('edit-student-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const newUsername = document.getElementById('edit-student-username').value;
-    const newPassword = document.getElementById('edit-student-password').value;
-    const nisn = document.getElementById('edit-student-nisn').value;
-    const nama = document.getElementById('edit-student-nama').value;
-    const kelas = document.getElementById('edit-student-kelas').value;
-    const phone = document.getElementById('edit-student-phone').value || '';
-
-    Swal.fire({
-      title: "Apakah sudah siap disimpan?",
-      showDenyButton: true,
-      showCancelButton: true,
-      confirmButtonText: "Simpan",
-      denyButtonText: `Jangan Simpan`
-    }).then((result) => {
-      if (result.isConfirmed) {
-        const store = getStore('users', 'readwrite');
-        
-        // If username changed, delete old and create new
-        if (originalUsername !== newUsername) {
-          // Check if new username already exists
-          const checkRequest = store.get(newUsername);
-          checkRequest.onsuccess = () => {
-            if (checkRequest.result && originalUsername !== newUsername) {
-              Swal.fire("Error!", "Username sudah digunakan!", "error");
-              return;
-            }
-            
-            // Delete old username
-            const deleteRequest = store.delete(originalUsername);
-            deleteRequest.onsuccess = () => {
-              // Add with new username
-              const userData = {
-                username: newUsername,
-                password: newPassword || document.getElementById('edit-student-password').dataset.oldPassword,
-                nisn: nisn,
-                nama: nama,
-                kelas: kelas,
-                phone: phone
-              };
-              
-              const addRequest = store.add(userData);
-              addRequest.onsuccess = () => {
-                Swal.fire("Tersimpan!", "Data berhasil diupdate!", "success");
-                bootstrap.Modal.getInstance(document.getElementById('editStudentModal')).hide();
-                loadStudents();
-                loadStatistics();
-              };
-            };
-          };
-        } else {
-          // Just update existing
-          const request = store.get(originalUsername);
-          request.onsuccess = () => {
-            const userData = request.result;
-            if (newPassword) userData.password = newPassword;
-            userData.nisn = nisn;
-            userData.nama = nama;
-            userData.kelas = kelas;
-            userData.phone = phone;
-            const updateRequest = store.put(userData);
-            updateRequest.onsuccess = () => {
-              Swal.fire("Tersimpan!", "Data berhasil diupdate!", "success");
-              bootstrap.Modal.getInstance(document.getElementById('editStudentModal')).hide();
-              loadStudents();
-              loadStatistics();
-            };
-          };
-        }
-      } else if (result.isDenied) {
-        Swal.fire("Perubahan tidak tersimpan!", "", "info");
-      }
+    firebase.database().ref('users/' + username).set(userData).then(() => {
+      showToast('Siswa disimpan!');
+      bootstrap.Modal.getInstance(document.getElementById('studentModal')).hide();
+    }).catch((err) => {
+      showToast('Gagal simpan siswa: ' + err.message, 'danger');
     });
   });
 
-  // Export functions
-  document.getElementById('export-fasilitas').addEventListener('click', () => exportToHTMLTable('fasilitasReports', 'fasilitas-reports.html'));
-  document.getElementById('export-piket').addEventListener('click', () => exportToHTMLTable('piketReports', 'piket-reports.html'));
+  // Export buttons
+  document.getElementById('export-laporan').addEventListener('click', () => exportData('laporan_fasilitas', 'laporan_fasilitas.html'));
+  document.getElementById('export-piket').addEventListener('click', () => exportData('absensi_piket', 'absensi_piket.html'));
 
-  async function loadReports() {
-    await loadFasilitas();
-    await loadPiket();
-  }
-
-  async function loadStatistics() {
-    const fasilitasStore = getStore('fasilitasReports');
-    const fasilitasRequest = fasilitasStore.getAll();
-    fasilitasRequest.onsuccess = () => {
-      const fasilitasReports = fasilitasRequest.result;
-      document.getElementById('total-fasilitas').textContent = fasilitasReports.length;
-      document.getElementById('selesai-fasilitas').textContent = fasilitasReports.filter(r => r.status === 'selesai').length;
-      const uniqueClasses = new Set(fasilitasReports.map(r => r.kelas));
-      document.getElementById('total-kelas').textContent = uniqueClasses.size;
-    };
-
-    const piketStore = getStore('piketReports');
-    const piketRequest = piketStore.getAll();
-    piketRequest.onsuccess = () => {
-      const piketReports = piketRequest.result;
-      document.getElementById('total-piket').textContent = piketReports.length;
-    };
-
-    const usersStore = getStore('users');
-    const usersRequest = usersStore.getAll();
-    usersRequest.onsuccess = () => {
-      const users = usersRequest.result;
-      document.getElementById('total-users').textContent = users.length;
-    };
-  }
-
-  async function loadChart() {
-    const store = getStore('fasilitasReports');
-    const request = store.getAll();
-    request.onsuccess = () => {
-      const reports = request.result;
-      const statusCounts = {
-        baru: reports.filter(r => r.status === 'baru').length,
-        diproses: reports.filter(r => r.status === 'diproses').length,
-        selesai: reports.filter(r => r.status === 'selesai').length
-      };
-
-      const ctx = document.getElementById('fasilitas-chart').getContext('2d');
-      
-      // Destroy previous chart if exists
-      if (chartInstance) {
-        chartInstance.destroy();
-      }
-
-      chartInstance = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: ['Baru', 'Diproses', 'Selesai'],
-          datasets: [{
-            data: [statusCounts.baru, statusCounts.diproses, statusCounts.selesai],
-            backgroundColor: ['#ff6384', '#ffcd56', '#4bc0c0']
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: {
-              position: 'bottom',
-            }
-          }
-        }
+  function exportData(refName, filename) {
+    firebase.database().ref(refName).once('value').then((snap) => {
+      const data = [];
+      snap.forEach((child) => {
+        data.push(child.val());
       });
-    };
-  }
-
-  async function loadFasilitas() {
-    const tbody = document.querySelector('#fasilitas-table tbody');
-    tbody.innerHTML = '';
-
-    const store = getStore('fasilitasReports');
-    const request = store.getAll();
-    request.onsuccess = () => {
-      let reports = request.result;
-
-      // Search
-      const searchTerm = document.getElementById('search-fasilitas').value.toLowerCase();
-      if (searchTerm) {
-        reports = reports.filter(r => 
-          r.nama.toLowerCase().includes(searchTerm) ||
-          r.kelas.toLowerCase().includes(searchTerm) ||
-          r.lokasi.toLowerCase().includes(searchTerm)
-        );
-      }
-
-      // Sort
-      const sortBy = document.getElementById('sort-fasilitas').value;
-      if (sortBy) {
-        reports.sort((a, b) => {
-          if (sortBy === 'nama') return a.nama.localeCompare(b.nama);
-          if (sortBy === 'tanggal') return new Date(a.tanggal) - new Date(b.tanggal);
-          if (sortBy === 'status') return a.status.localeCompare(b.status);
-        });
-      }
-
-      reports.forEach((item) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${item.nama}</td>
-          <td>${item.kelas}</td>
-          <td>${item.lokasi}</td>
-          <td>${item.kategori || 'N/A'}</td>
-          <td><span class="badge bg-${item.prioritas === 'tinggi' ? 'danger' : item.prioritas === 'sedang' ? 'warning' : 'success'}">${item.prioritas || 'rendah'}</span></td>
-          <td>${item.deskripsi}</td>
-          <td><img src="${item.foto}" alt="Foto Fasilitas" style="width: 50px; cursor: pointer;" onclick="showImageModal('${item.foto}')"></td>
-          <td><span class="badge bg-${item.status === 'selesai' ? 'success' : item.status === 'diproses' ? 'warning' : 'secondary'}">${item.status}</span></td>
-          <td>${item.tanggal}</td>
-          <td>
-            <select class="form-select form-select-sm" onchange="updateStatus(${item.id}, this.value)">
-              <option value="baru" ${item.status === 'baru' ? 'selected' : ''}>Baru</option>
-              <option value="diproses" ${item.status === 'diproses' ? 'selected' : ''}>Diproses</option>
-              <option value="selesai" ${item.status === 'selesai' ? 'selected' : ''}>Selesai</option>
-            </select>
-          </td>
-        `;
-        tbody.appendChild(row);
-      });
-    };
-  }
-
-  async function loadPiket() {
-    const tbody = document.querySelector('#piket-table tbody');
-    tbody.innerHTML = '';
-
-    const store = getStore('piketReports');
-    const request = store.getAll();
-    request.onsuccess = () => {
-      let reports = request.result;
-
-      // Search
-      const searchTerm = document.getElementById('search-piket').value.toLowerCase();
-      if (searchTerm) {
-        reports = reports.filter(r =>
-          r.nama.toLowerCase().includes(searchTerm) ||
-          r.kelas.toLowerCase().includes(searchTerm)
-        );
-      }
-
-      // Sort
-      const sortBy = document.getElementById('sort-piket').value;
-      if (sortBy) {
-        reports.sort((a, b) => {
-          if (sortBy === 'nama') return a.nama.localeCompare(b.nama);
-          if (sortBy === 'tanggal') return new Date(a.tanggal) - new Date(b.tanggal);
-        });
-      }
-
-      reports.forEach((item) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${item.nama}</td>
-          <td>${item.kelas}</td>
-          <td>${item.tanggal}</td>
-          <td><img src="${item.foto}" alt="Foto Piket" style="width: 50px; cursor: pointer;" onclick="showImageModal('${item.foto}')"></td>
-          <td>${item.waktu}</td>
-        `;
-        tbody.appendChild(row);
-      });
-
-      // Load class list
-      loadClassList(reports);
-    };
-  }
-
-  async function loadClassList(piketReports) {
-    const classListDiv = document.getElementById('class-list');
-    classListDiv.innerHTML = '';
-
-    const allClasses = [
-      'X TKJ 1', 'X TKJ 2', 'X TKJ 3',
-      'XI TKJ 1', 'XI TKJ 2', 'XI TKJ 3',
-      'XII TKJ 1', 'XII TKJ 2', 'XII TKJ 3'
-    ];
-
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-
-    allClasses.forEach(kelas => {
-      const hasSubmitted = piketReports.some(r => r.kelas === kelas && r.tanggal === today);
-      const col = document.createElement('div');
-      col.className = 'col-md-3 mb-2';
-      col.innerHTML = `
-        <div class="form-check">
-          <input class="form-check-input" type="checkbox" id="check-${kelas.replace(/\s+/g, '-')}" ${hasSubmitted ? 'checked' : ''} disabled>
-          <label class="form-check-label" for="check-${kelas.replace(/\s+/g, '-')}">
-            ${kelas}
-          </label>
-        </div>
-      `;
-      classListDiv.appendChild(col);
-    });
-  }
-
-  window.updateStatus = async (id, status) => {
-    const store = getStore('fasilitasReports', 'readwrite');
-    const request = store.get(id);
-    request.onsuccess = () => {
-      const report = request.result;
-      report.status = status;
-      const updateRequest = store.put(report);
-      updateRequest.onsuccess = () => {
-        Toast.fire({
-          icon: "success",
-          title: "Status berhasil diperbarui!"
-        });
-        loadFasilitas();
-        loadStatistics();
-        loadChart();
-      };
-    };
-  };
-
-  async function loadStudents() {
-    const tbody = document.querySelector('#students-table tbody');
-    tbody.innerHTML = '';
-
-    const store = getStore('users');
-    const request = store.getAll();
-    request.onsuccess = () => {
-      const students = request.result;
-      students.forEach((student) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${student.username}</td>
-          <td>${student.nisn || 'N/A'}</td>
-          <td>${student.nama || 'N/A'}</td>
-          <td>${student.kelas}</td>
-          <td>${student.phone || 'N/A'}</td>
-          <td>
-            <button class="btn btn-sm btn-warning me-2" onclick="editStudent('${student.username}')"><i class="bi bi-pencil"></i> Edit</button>
-            <button class="btn btn-sm btn-danger" onclick="deleteStudent('${student.username}')"><i class="bi bi-trash"></i> Hapus</button>
-          </td>
-        `;
-        tbody.appendChild(row);
-      });
-    };
-  }
-
-  window.editStudent = (username) => {
-    originalUsername = username; // Store original username
-    const store = getStore('users');
-    const request = store.get(username);
-    request.onsuccess = () => {
-      const student = request.result;
-      document.getElementById('edit-student-username').value = student.username;
-      document.getElementById('edit-student-username').readOnly = false; // Make it editable
-      document.getElementById('edit-student-password').value = '';
-      document.getElementById('edit-student-password').dataset.oldPassword = student.password;
-      document.getElementById('edit-student-nisn').value = student.nisn || '';
-      document.getElementById('edit-student-nama').value = student.nama || '';
-      document.getElementById('edit-student-kelas').value = student.kelas;
-      document.getElementById('edit-student-phone').value = student.phone || '';
-      const modal = new bootstrap.Modal(document.getElementById('editStudentModal'));
-      modal.show();
-    };
-  };
-
-  window.deleteStudent = (username) => {
-    Swal.fire({
-      title: 'Apakah Anda yakin?',
-      text: "Data siswa akan dihapus permanen!",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Ya, hapus!',
-      cancelButtonText: 'Batal'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        const store = getStore('users', 'readwrite');
-        const request = store.delete(username);
-        request.onsuccess = () => {
-          Swal.fire('Terhapus!', 'Siswa berhasil dihapus.', 'success');
-          loadStudents();
-          loadStatistics();
-        };
-      }
-    });
-  };
-
-  window.showImageModal = (src) => {
-    const modal = new bootstrap.Modal(document.getElementById('imageModal'));
-    document.getElementById('modalImage').src = src;
-    modal.show();
-  };
-
-  function exportToHTMLTable(storeName, filename) {
-    const store = getStore(storeName);
-    const request = store.getAll();
-    request.onsuccess = () => {
-      const data = request.result;
-      if (data.length === 0) {
-        showToast('Tidak ada data untuk diekspor!', 'warning');
-        return;
-      }
-
-      const htmlContent = convertToHTMLTable(data, storeName);
+      const htmlContent = convertToHTMLTable(data, refName);
       const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      if (link.download !== undefined) {
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', filename);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
+      link.href = url;
+      link.download = filename;
+      link.click();
       Toast.fire({
         icon: "success",
         title: "Data berhasil diekspor!"
       });
-    };
+    });
   }
 
   function convertToHTMLTable(data, storeName) {
@@ -588,5 +346,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 </body>
 </html>`;
     return html;
+  }
+
+  // Update chart (contoh, adjust if needed)
+  function updateChart() {
+    firebase.database().ref('laporan_fasilitas').once('value').then((snap) => {
+      const statusCount = { baru: 0, diproses: 0, selesai: 0 };
+      snap.forEach((child) => {
+        const status = child.val().status || 'baru';
+        statusCount[status]++;
+      });
+      const ctx = document.getElementById('chart').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+      chartInstance = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: ['Baru', 'Diproses', 'Selesai'],
+          datasets: [{
+            data: [statusCount.baru, statusCount.diproses, statusCount.selesai],
+            backgroundColor: ['#dc3545', '#ffc107', '#28a745']
+          }]
+        },
+        options: {
+          responsive: true,
+          title: {
+            display: true,
+            text: 'Status Laporan Fasilitas'
+          }
+        }
+      });
+    });
   }
 });

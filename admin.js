@@ -1,4 +1,4 @@
-// admin.js — VERSI FINAL YANG BENAR-BENAR SESUAI DENGAN YANG KAMU KIRIM DARI AWAL
+// admin.js — VERSI FINAL (STRUKTUR DATABASE TIDAK DIUBAH SAMA SEKALI)
 
 const ADMIN_PASSWORD = "admin123"; // GANTI DI SINI SAJA KALAU MAU UBAH PASSWORD!!
 
@@ -202,6 +202,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('form-siswa').addEventListener('submit', e => {
     e.preventDefault();
     const username = document.getElementById('username').value.trim();
+    if (!username) {
+      showToast('Username tidak boleh kosong!', 'warning');
+      return;
+    }
     const data = {
       username,
       password: document.getElementById('password').value,
@@ -212,18 +216,21 @@ document.addEventListener('DOMContentLoaded', () => {
     firebase.database().ref('users/' + username).set(data).then(() => {
       showToast('Siswa berhasil disimpan!');
       bootstrap.Modal.getInstance(document.getElementById('siswaModal')).hide();
+    }).catch(err => {
+      showToast('Gagal menyimpan: ' + err.message, 'danger');
     });
   });
 
   function editSiswa(username) {
     firebase.database().ref('users/' + username).once('value').then(snap => {
       const u = snap.val();
+      if (!u) return;
       document.getElementById('modalTitle').textContent = 'Edit Siswa';
       document.getElementById('username').value = u.username;
       document.getElementById('username').readOnly = true;
-      document.getElementById('password').value = u.password;
-      document.getElementById('nama').value = u.nama;
-      document.getElementById('kelas').value = u.kelas;
+      document.getElementById('password').value = u.password || '';
+      document.getElementById('nama').value = u.nama || '';
+      document.getElementById('kelas').value = u.kelas || '';
       document.getElementById('phone').value = u.phone || '';
       new bootstrap.Modal(document.getElementById('siswaModal')).show();
     });
@@ -237,7 +244,11 @@ document.addEventListener('DOMContentLoaded', () => {
     firebase.database().ref(ref).once('value').then(snap => {
       const data = [];
       snap.forEach(c => data.push(c.val()));
-      const headers = Object.keys(data[0] || {});
+      if (data.length === 0) {
+        showToast('Tidak ada data untuk diekspor!', 'warning');
+        return;
+      }
+      const headers = Object.keys(data[0]);
       let rows = data.map(row => `<tr>${headers.map(h => {
         const val = row[h] || '';
         return val.includes('firebasestorage') ? `<td><img src="${val}" width="120"></td>` : `<td>${val}</td>`;
@@ -247,6 +258,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+    }).catch(err => {
+      showToast('Gagal mengekspor: ' + err.message, 'danger');
     });
   }
 
@@ -254,7 +268,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateChart() {
     firebase.database().ref('laporan_fasilitas').once('value').then(snap => {
       const count = { baru: 0, diproses: 0, selesai: 0 };
-      snap.forEach(c => count[c.val().status || 'baru']++);
+      snap.forEach(c => {
+        const status = c.val().status || 'baru';
+        if (count.hasOwnProperty(status)) count[status]++;
+      });
       const ctx = document.getElementById('statusChart').getContext('2d');
       if (chartInstance) chartInstance.destroy();
       chartInstance = new Chart(ctx, {

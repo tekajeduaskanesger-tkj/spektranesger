@@ -1,65 +1,46 @@
-// admin.js — VERSI FINAL 100% SESUAI PERMINTAANMU
-// Login cuma password | Semua data realtime Firebase | Bisa dari device lain
+// admin.js — VERSI FINAL YANG BENAR-BENAR SESUAI DENGAN YANG KAMU KIRIM DARI AWAL
 
-const ADMIN_PASSWORD = "admin123";  // GANTI DI SINI AJA KALAU MAU UBAH PASSWORD!!
+const ADMIN_PASSWORD = "admin123"; // GANTI DI SINI SAJA KALAU MAU UBAH PASSWORD!!
 
 let chartInstance = null;
 
 function showToast(msg, type = 'success') {
-  const toastEl = document.getElementById('liveToast') || createToastElement();
-  document.getElementById('toast-body').textContent = msg;
-  toastEl.className = `toast align-items-center text-bg-${type === 'danger' ? 'danger' : 'success'} border-0`;
-  new bootstrap.Toast(toastEl).show();
-}
-
-function createToastElement() {
-  const div = document.createElement('div');
-  div.className = 'toast-container position-fixed bottom-0 end-0 p-3';
-  div.innerHTML = `
-    <div id="liveToast" class="toast" role="alert">
-      <div class="toast-header">
-        <strong class="me-auto">Notifikasi</strong>
-        <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
-      </div>
-      <div class="toast-body" id="toast-body"></div>
-    </div>
-  `;
-  document.body.appendChild(div);
-  return document.getElementById('liveToast');
+  document.getElementById('toast-message').textContent = msg;
+  const toast = document.getElementById('toast');
+  toast.className = `toast align-items-center text-white bg-${type} border-0`;
+  new bootstrap.Toast(toast).show();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
 
-  // Toggle show/hide password
+  // Toggle show password
   document.getElementById('toggle-admin-password').addEventListener('click', () => {
-    const pass = document.getElementById('admin-password');
+    const input = document.getElementById('admin-password');
     const icon = document.getElementById('toggle-admin-password');
-    if (pass.type === 'password') {
-      pass.type = 'text';
+    if (input.type === 'password') {
+      input.type = 'text';
       icon.classList.replace('bi-eye', 'bi-eye-slash');
     } else {
-      pass.type = 'password';
+      input.type = 'password';
       icon.classList.replace('bi-eye-slash', 'bi-eye');
     }
   });
 
-  // LOGIN ADMIN — CUMA PASSWORD DOANG
+  // Login admin — CUMA PASSWORD
   document.getElementById('admin-login-form').addEventListener('submit', e => {
     e.preventDefault();
-    const inputPass = document.getElementById('admin-password').value;
-    if (inputPass === ADMIN_PASSWORD) {
+    if (document.getElementById('admin-password').value === ADMIN_PASSWORD) {
       localStorage.setItem('adminLoggedIn', 'true');
       document.getElementById('login-section').style.display = 'none';
       document.getElementById('admin-content').style.display = 'block';
       loadAllData();
-      showToast('Login admin berhasil!', 'success');
+      showToast('Login berhasil!', 'success');
     } else {
       showToast('Password salah!', 'danger');
       document.getElementById('admin-password').value = '';
     }
   });
 
-  // Auto login kalau sudah pernah masuk
   if (localStorage.getItem('adminLoggedIn') === 'true') {
     document.getElementById('login-section').style.display = 'none';
     document.getElementById('admin-content').style.display = 'block';
@@ -87,114 +68,109 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ==================== LAPORAN FASILITAS ====================
   function loadLaporanFasilitas() {
-    firebase.database().ref('laporan_fasilitas').on('value', snapshot => {
+    firebase.database().ref('laporan_fasilitas').on('value', snap => {
       const tbody = document.querySelector('#fasilitas-table tbody');
       tbody.innerHTML = '';
-      snapshot.forEach(child => {
-        const data = child.val();
+      snap.forEach(child => {
+        const d = child.val();
         const key = child.key;
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${data.nama || '-'}</td>
-          <td>${data.kelas || '-'}</td>
-          <td>${data.lokasi}</td>
-          <td>${data.kategori}</td>
-          <td><span class="badge bg-${data.prioritas === 'tinggi' ? 'danger' : data.prioritas === 'sedang' ? 'warning' : 'info'}">${data.prioritas}</span></td>
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${d.nama}</td>
+          <td>${d.kelas || '-'}</td>
+          <td>${d.lokasi}</td>
+          <td>${d.kategori}</td>
+          <td><span class="badge bg-${d.prioritas === 'tinggi' ? 'danger' : d.prioritas === 'sedang' ? 'warning' : 'secondary'}">${d.prioritas}</span></td>
           <td>
             <select class="form-select form-select-sm status-select" data-key="${key}">
-              <option value="baru" ${data.status === 'baru' ? 'selected' : ''}>Baru</option>
-              <option value="diproses" ${data.status === 'diproses' ? 'selected' : ''}>Diproses</option>
-              <option value="selesai" ${data.status === 'selesai' ? 'selected' : ''}>Selesai</option>
+              <option value="baru" ${d.status === 'baru' ? 'selected' : ''}>Baru</option>
+              <option value="diproses" ${d.status === 'diproses' ? 'selected' : ''}>Diproses</option>
+              <option value="selesai" ${d.status === 'selesai' ? 'selected' : ''}>Selesai</option>
             </select>
           </td>
-          <td><button class="btn btn-sm btn-info view-img" data-url="${data.foto}">Lihat</button></td>
-          <td>${data.tanggal}</td>
+          <td><button class="btn btn-sm btn-info view-img" data-url="${d.foto}">Lihat</button></td>
+          <td>${d.tanggal}</td>
           <td><button class="btn btn-sm btn-danger hapus" data-type="laporan_fasilitas" data-key="${key}">Hapus</button></td>
         `;
-        tbody.appendChild(tr);
+        tbody.appendChild(row);
       });
-      attachEventListeners();
+      attachEvents();
     });
   }
 
   // ==================== ABSENSI PIKET ====================
   function loadAbsensiPiket() {
-    firebase.database().ref('absensi_piket').on('value', snapshot => {
+    firebase.database().ref('absensi_piket').on('value', snap => {
       const tbody = document.querySelector('#piket-table tbody');
       tbody.innerHTML = '';
-      snapshot.forEach(child => {
-        const data = child.val();
+      snap.forEach(child => {
+        const d = child.val();
         const key = child.key;
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${data.nama || '-'}</td>
-          <td>${data.kelas || '-'}</td>
-          <td>${data.tanggal}</td>
-          <td>${data.waktu}</td>
-          <td><button class="btn btn-sm btn-info view-img" data-url="${data.foto}">Lihat</button></td>
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${d.nama}</td>
+          <td>${d.kelas || '-'}</td>
+          <td>${d.tanggal}</td>
+          <td>${d.waktu}</td>
+          <td><button class="btn btn-sm btn-info view-img" data-url="${d.foto}">Lihat</button></td>
           <td><button class="btn btn-sm btn-danger hapus" data-type="absensi_piket" data-key="${key}">Hapus</button></td>
         `;
-        tbody.appendChild(tr);
+        tbody.appendChild(row);
       });
-      attachEventListeners();
+      attachEvents();
     });
   }
 
   // ==================== DAFTAR SISWA ====================
   function loadDaftarSiswa() {
-    firebase.database().ref('users').on('value', snapshot => {
+    firebase.database().ref('users').on('value', snap => {
       const tbody = document.querySelector('#siswa-table tbody');
       tbody.innerHTML = '';
-      snapshot.forEach(child => {
-        const user = child.val();
-        if (user.username && user.username !== 'admin') {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${user.username}</td>
-            <td>${user.nama || '-'}</td>
-            <td>${user.kelas || '-'}</td>
-            <td>${user.phone || '-'}</td>
+      snap.forEach(child => {
+        const u = child.val();
+        if (u.username && u.username !== 'admin') {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${u.username}</td>
+            <td>${u.nama || '-'}</td>
+            <td>${u.kelas || '-'}</td>
+            <td>${u.phone || '-'}</td>
             <td>
-              <button class="btn btn-sm btn-warning edit-siswa" data-username="${user.username}">Edit</button>
-              <button class="btn btn-sm btn-danger hapus-siswa" data-username="${user.username}">Hapus</button>
+              <button class="btn btn-sm btn-warning edit-siswa" data-username="${u.username}">Edit</button>
+              <button class="btn btn-sm btn-danger hapus-siswa" data-username="${u.username}">Hapus</button>
             </td>
           `;
-          tbody.appendChild(tr);
+          tbody.appendChild(row);
         }
       });
-      attachEventListeners();
+      attachEvents();
     });
   }
 
   // ==================== EVENT LISTENERS ====================
-  function attachEventListeners() {
-    // Lihat foto besar
-    document.querySelectorAll('.view-img').forEach(btn => {
-      btn.onclick = () => {
-        document.getElementById('modalImage').src = btn.dataset.url;
+  function attachEvents() {
+    // Lihat foto
+    document.querySelectorAll('.view-img').forEach(b => {
+      b.onclick = () => {
+        document.getElementById('modalImage').src = b.dataset.url;
         new bootstrap.Modal(document.getElementById('imageModal')).show();
       };
     });
 
-    // Ubah status laporan
-    document.querySelectorAll('.status-select').forEach(sel => {
-      sel.onchange = () => {
-        firebase.database().ref('laporan_fasilitas/' + sel.dataset.key).update({ status: sel.value });
+    // Ubah status
+    document.querySelectorAll('.status-select').forEach(s => {
+      s.onchange = () => {
+        firebase.database().ref('laporan_fasilitas/' + s.dataset.key).update({ status: s.value });
         showToast('Status diperbarui!');
       };
     });
 
-    // Hapus data
-    document.querySelectorAll('.hapus').forEach(btn => {
-      btn.onclick = () => {
-        Swal.fire({
-          title: 'Yakin hapus?',
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonText: 'Ya, hapus!'
-        }).then(result => {
-          if (result.isConfirmed) {
-            firebase.database().ref(btn.dataset.type + '/' + btn.dataset.key).remove();
+    // Hapus
+    document.querySelectorAll('.hapus').forEach(b => {
+      b.onclick = () => {
+        Swal.fire({ title: 'Yakin hapus?', icon: 'warning', showCancelButton: true }).then(r => {
+          if (r.isConfirmed) {
+            firebase.database().ref(b.dataset.type + '/' + b.dataset.key).remove();
             showToast('Data dihapus!');
           }
         });
@@ -202,18 +178,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Edit & Hapus siswa
-    document.querySelectorAll('.edit-siswa').forEach(btn => {
-      btn.onclick = () => editSiswa(btn.dataset.username);
-    });
-    document.querySelectorAll('.hapus-siswa').forEach(btn => {
-      btn.onclick = () => {
-        Swal.fire({
-          title: 'Hapus siswa ini?',
-          icon: 'warning',
-          showCancelButton: true
-        }).then(res => {
-          if (res.isConfirmed) {
-            firebase.database().ref('users/' + btn.dataset.username).remove();
+    document.querySelectorAll('.edit-siswa').forEach(b => b.onclick = () => editSiswa(b.dataset.username));
+    document.querySelectorAll('.hapus-siswa').forEach(b => {
+      b.onclick = () => {
+        Swal.fire({ title: 'Hapus siswa ini?', icon: 'warning', showCancelButton: true }).then(r => {
+          if (r.isConfirmed) {
+            firebase.database().ref('users/' + b.dataset.username).remove();
             showToast('Siswa dihapus!');
           }
         });
@@ -260,15 +230,20 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==================== EXPORT HTML ====================
-  document.getElementById('export-laporan').addEventListener('click', () => exportHTML('laporan_fasilitas', 'Laporan_Fasilitas.html'));
-  document.getElementById('export-piket').addEventListener('click', () => exportHTML('absensi_piket', 'Absensi_Piket.html'));
+  document.getElementById('export-laporan').onclick = () => exportToHTML('laporan_fasilitas', 'Laporan_Fasilitas.html');
+  document.getElementById('export-piket').onclick = () => exportToHTML('absensi_piket', 'Absensi_Piket.html');
 
-  function exportHTML(ref, filename) {
+  function exportToHTML(ref, filename) {
     firebase.database().ref(ref).once('value').then(snap => {
       const data = [];
       snap.forEach(c => data.push(c.val()));
-      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${filename}</title><style>table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}th{background:#f0f0f0;}</style></head><body><h1>${filename}</h1><table><thead><tr>${Object.keys(data[0] || {}).map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${data.map(row => `<tr>${Object.values(row).map(v => v && v.includes('firebasestorage') ? `<td><img src="${v}" width="150"></td>` : `<td>${v || ''}</td>`).join('')}</tr>`).join('')}</tbody></table></body></html>`;
-      const blob = new Blob([html], { type: 'text/html' });
+      const headers = Object.keys(data[0] || {});
+      let rows = data.map(row => `<tr>${headers.map(h => {
+        const val = row[h] || '';
+        return val.includes('firebasestorage') ? `<td><img src="${val}" width="120"></td>` : `<td>${val}</td>`;
+      }).join('')}</tr>`).join('');
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${filename}</title><style>table{border-collapse:collapse;width:100%;}th,td{border:1px solid #000;padding:8px;}th{background:#333;color:#fff;}</style></head><body><h1>${filename}</h1><table><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr>${rows}</table></body></html>`;
+      const blob = new Blob([html], {type: 'text/html'});
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url; a.download = filename; a.click();
@@ -279,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateChart() {
     firebase.database().ref('laporan_fasilitas').once('value').then(snap => {
       const count = { baru: 0, diproses: 0, selesai: 0 };
-      snap.forEach(child => count[child.val().status || 'baru']++);
+      snap.forEach(c => count[c.val().status || 'baru']++);
       const ctx = document.getElementById('statusChart').getContext('2d');
       if (chartInstance) chartInstance.destroy();
       chartInstance = new Chart(ctx, {
@@ -293,32 +268,3 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
-
-// TAMBAH MODAL INI DI admin.html (kalau belum ada)
-const modalHTML = `
-<div class="modal fade" id="siswaModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title" id="modalTitle">Tambah Siswa</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body">
-        <form id="form-siswa">
-          <div class="mb-3"><label>Username (NISN)</label><input type="text" class="form-control" id="username" required></div>
-          <div class="mb-3"><label>Password</label><input type="password" class="form-control" id="password" required></div>
-          <div class="mb-3"><label>Nama Lengkap</label><input type="text" class="form-control" id="nama" required></div>
-          <div class="mb-3"><label>Kelas</label><select class="form-select" id="kelas" required>${[...Array(9)].map((_,i)=>`<option value="X TKJ ${i+1}">X TKJ ${i+1}</option><option value="XI TKJ ${i+1}">XI TKJ ${i+1}</option><option value="XII TKJ ${i+1}">XII TKJ ${i+1}</option>`).join('').slice(0,-28)}</select></div>
-          <div class="mb-3"><label>No HP (opsional)</label><input type="tel" class="form-control" id="phone"></div>
-          <button type="submit" class="btn btn-primary w-100">Simpan</button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="modal fade" id="imageModal" tabindex="-1">
-  <div class="modal-dialog modal-lg"><div class="modal-content">
-    <div class="modal-header"><h5 class="modal-title">Bukti Foto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-    <div class="modal-body text-center"><img id="modalImage" src="" class="img-fluid rounded" alt="Foto"></div>
-  </div></div>
-</div>
-`;
-document.body.insertAdjacentHTML('beforeend', modalHTML);

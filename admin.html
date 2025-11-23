@@ -40,25 +40,24 @@
             <h1 class="card-title mb-0"><i class="bi bi-shield-lock"></i> Admin Dashboard</h1>
           </div>
           <div class="card-body">
-
-            <!-- LOGIN ADMIN — CUMA PASSWORD DOANG -->
+            <!-- Login Section -->
             <div id="login-section">
               <div class="row justify-content-center">
                 <div class="col-md-6">
-                  <div class="card border-danger">
-                    <div class="card-header bg-danger text-white text-center">
-                      <h5><i class="bi bi-key"></i> Login Admin</h5>
+                  <div class="card">
+                    <div class="card-header">
+                      <h5 class="mb-0"><i class="bi bi-key"></i> Login Admin</h5>
                     </div>
                     <div class="card-body">
                       <form id="admin-login-form">
-                        <div class="mb-3 password-toggle-container">
-                          <label class="form-label">Password Admin</label>
-                          <input type="password" class="form-control" id="admin-password" placeholder="Masukkan password" required>
-                          <i class="bi bi-eye password-toggle-icon" id="toggle-admin-password"></i>
+                        <div class="mb-3">
+                          <label class="form-label">Password</label>
+                          <div class="password-toggle-container">
+                            <input type="password" class="form-control" id="admin-password" placeholder="Masukkan Password" required>
+                            <i class="bi bi-eye password-toggle-icon" id="toggle-admin-password"></i>
+                          </div>
                         </div>
-                        <button type="submit" class="btn btn-danger w-100">
-                          <i class="bi bi-box-arrow-in-right"></i> Masuk sebagai Admin
-                        </button>
+                        <button type="submit" class="btn btn-dark"><i class="bi bi-box-arrow-in-right"></i> Login</button>
                       </form>
                     </div>
                   </div>
@@ -66,78 +65,180 @@
               </div>
             </div>
 
-            <!-- KONTEN ADMIN SETELAH LOGIN -->
+            <!-- Admin Content -->
             <div id="admin-content" style="display: none;">
-              <ul class="nav nav-tabs mb-4" id="adminTabs">
-                <li class="nav-item"><button class="nav-link active" data-tab="laporan">Laporan Fasilitas</button></li>
-                <li class="nav-item"><button class="nav-link" data-tab="piket">Absensi Piket</button></li>
-                <li class="nav-item"><button class="nav-link" data-tab="siswa">Manajemen Siswa</button></li>
-              </ul>
 
-              <!-- Tab Laporan Fasilitas -->
-              <div id="tab-laporan">
-                <button class="btn btn-success mb-3" id="export-laporan"><i class="bi bi-download"></i> Export ke HTML</button>
-                <div class="table-responsive">
-                  <table class="table table-striped" id="fasilitas-table">
-                    <thead class="table-dark">
-                      <tr>
-                        <th>Nama</th>
-                        <th>Kelas</th>
-                        <th>Lokasi</th>
-                        <th>Kategori</th>
-                        <th>Prioritas</th>
-                        <th>Status</th>
-                        <th>Foto</th>
-                        <th>Tanggal</th>
-                        <th>Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody></tbody>
-                  </table>
+              <!-- Student Management -->
+              <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                  <h5 class="mb-0"><i class="bi bi-people"></i> Manajemen Siswa</h5>
+                </div>
+                <div class="card-body">
+                  <button class="btn btn-success mb-3" id="tambah-siswa"><i class="bi bi-plus-circle"></i> Tambah Siswa</button>
+                  <div class="table-responsive">
+                    <table class="table table-striped" id="siswa-table">
+                      <thead>
+                        <tr>
+                          <th>Username</th>
+                          <th>NISN</th> <!-- Diisi dari username -->
+                          <th>Nama</th>
+                          <th>Kelas</th>
+                          <th>No HP</th>
+                          <th>Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody></tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
 
-              <!-- Tab Absensi Piket -->
-              <div id="tab-piket" style="display: none;">
-                <button class="btn btn-success mb-3" id="export-piket"><i class="bi bi-download"></i> Export ke HTML</button>
-                <div class="table-responsive">
-                  <table class="table table-striped" id="piket-table">
-                    <thead class="table-dark">
-                      <tr>
-                        <th>Nama</th>
-                        <th>Kelas</th>
-                        <th>Tanggal</th>
-                        <th>Waktu</th>
-                        <th>Foto</th>
-                        <th>Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody></tbody>
-                  </table>
+              <!-- Statistics -->
+              <div class="row mb-4">
+                <div class="col-md-3">
+                  <div class="card text-center">
+                    <div class="card-body">
+                      <h5 class="card-title"><i class="bi bi-tools text-warning"></i></h5>
+                      <p class="card-text">Total Laporan Fasilitas</p>
+                      <h3 id="total-fasilitas">0</h3>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card text-center">
+                    <div class="card-body">
+                      <h5 class="card-title"><i class="bi bi-check-circle text-success"></i></h5>
+                      <p class="card-text">Laporan Selesai</p>
+                      <h3 id="selesai-fasilitas">0</h3>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card text-center">
+                    <div class="card-body">
+                      <h5 class="card-title"><i class="bi bi-house-door text-secondary"></i></h5>
+                      <p class="card-text">Kelas dengan Laporan</p>
+                      <h3 id="total-kelas">0</h3>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card text-center">
+                    <div class="card-body">
+                      <h5 class="card-title"><i class="bi bi-calendar-check text-info"></i></h5>
+                      <p class="card-text">Total Absensi Piket</p>
+                      <h3 id="total-piket">0</h3>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="row mb-4">
+                <div class="col-md-12">
+                  <div class="card text-center">
+                    <div class="card-body">
+                      <h5 class="card-title"><i class="bi bi-people text-primary"></i></h5>
+                      <p class="card-text">Total Pengguna</p>
+                      <h3 id="total-users">0</h3>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <!-- Tab Manajemen Siswa -->
-              <div id="tab-siswa" style="display: none;">
-                <button class="btn btn-primary mb-3" id="tambah-siswa"><i class="bi bi-person-plus"></i> Tambah Siswa Baru</button>
-                <div class="table-responsive">
-                  <table class="table table-striped" id="siswa-table">
-                    <thead class="table-dark">
-                      <tr>
-                        <th>Username</th>
-                        <th>Nama Lengkap</th>
-                        <th>Kelas</th>
-                        <th>No HP</th>
-                        <th>Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody></tbody>
-                  </table>
+              <!-- Chart -->
+              <div class="card mb-4">
+                <div class="card-header">
+                  <h5><i class="bi bi-bar-chart"></i> Statistik Laporan Fasilitas</h5>
+                </div>
+                <div class="card-body">
+                  <canvas id="statusChart"></canvas> <!-- tetap pakai ID lama agar JS tidak perlu diubah -->
                 </div>
               </div>
 
-              <div class="mt-5">
-                <canvas id="statusChart" height="100"></canvas>
+              <!-- Laporan Fasilitas Table -->
+              <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                  <h5 class="mb-0"><i class="bi bi-tools"></i> Laporan Fasilitas</h5>
+                </div>
+                <div class="card-body">
+                  <div class="row mb-3">
+                    <div class="col-md-4">
+                      <input type="text" class="form-control" id="search-fasilitas" placeholder="Cari..." disabled>
+                    </div>
+                    <div class="col-md-4">
+                      <select class="form-select" id="sort-fasilitas" disabled>
+                        <option value="">Urutkan</option>
+                        <option value="nama">Nama</option>
+                        <option value="tanggal">Tanggal</option>
+                        <option value="status">Status</option>
+                      </select>
+                    </div>
+                    <div class="col-md-4">
+                      <button class="btn btn-success" id="export-laporan"><i class="bi bi-download"></i> Export HTML</button>
+                    </div>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table table-striped" id="fasilitas-table">
+                      <thead>
+                        <tr>
+                          <th>Nama</th>
+                          <th>Kelas</th>
+                          <th>Lokasi</th>
+                          <th>Kategori</th>
+                          <th>Prioritas</th>
+                          <!-- ❌ Kolom Deskripsi Dihilangkan karena tidak ada di database -->
+                          <th>Foto</th>
+                          <th>Status</th>
+                          <th>Tanggal</th>
+                          <th>Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Absensi Piket Table -->
+              <div class="card">
+                <div class="card-header bg-info text-white">
+                  <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Absensi Piket</h5>
+                </div>
+                <div class="card-body">
+                  <!-- Daftar Kelas (akan diisi via JS nanti) -->
+                  <div class="mb-4">
+                    <h6>Daftar Kelas (Kelas akan otomatis tercentang apabila sudah mengumpulkan!)</h6>
+                    <div id="class-list" class="row"></div>
+                  </div>
+                  <div class="row mb-3">
+                    <div class="col-md-4">
+                      <input type="text" class="form-control" id="search-piket" placeholder="Cari..." disabled>
+                    </div>
+                    <div class="col-md-4">
+                      <select class="form-select" id="sort-piket" disabled>
+                        <option value="">Urutkan</option>
+                        <option value="nama">Nama</option>
+                        <option value="tanggal">Tanggal</option>
+                      </select>
+                    </div>
+                    <div class="col-md-4">
+                      <button class="btn btn-success" id="export-piket"><i class="bi bi-download"></i> Export HTML</button>
+                    </div>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table table-striped" id="piket-table">
+                      <thead>
+                        <tr>
+                          <th>Nama</th>
+                          <th>Kelas</th>
+                          <th>Tanggal</th>
+                          <th>Foto</th>
+                          <th>Waktu</th>
+                        </tr>
+                      </thead>
+                      <tbody></tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -146,30 +247,30 @@
     </div>
   </div>
 
-  <!-- Modal Tambah/Edit Siswa — EXACT SAMA -->
+  <!-- Add/Edit Student Modal (digabung jadi satu modal, pakai logika JS lama) -->
   <div class="modal fade" id="siswaModal" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="modalTitle">Tambah Siswa</h5>
+          <h5 class="modal-title" id="modalTitle"><i class="bi bi-plus-circle"></i> Tambah Siswa</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <form id="form-siswa">
             <div class="mb-3">
-              <label>Username (NISN)</label>
+              <label class="form-label">Username (NISN)</label>
               <input type="text" class="form-control" id="username" required>
             </div>
             <div class="mb-3">
-              <label>Password</label>
+              <label class="form-label">Password</label>
               <input type="password" class="form-control" id="password" required>
             </div>
             <div class="mb-3">
-              <label>Nama Lengkap</label>
+              <label class="form-label">Nama Lengkap</label>
               <input type="text" class="form-control" id="nama" required>
             </div>
             <div class="mb-3">
-              <label>Kelas</label>
+              <label class="form-label">Kelas</label>
               <select class="form-select" id="kelas" required>
                 <option value="">Pilih Kelas</option>
                 <option value="X TKJ 1">X TKJ 1</option>
@@ -184,32 +285,32 @@
               </select>
             </div>
             <div class="mb-3">
-              <label>No HP (opsional)</label>
-              <input type="tel" class="form-control" id="phone">
+              <label class="form-label">Nomor HP (Opsional)</label>
+              <input type="tel" class="form-control" id="phone" placeholder="08xxxxxxxxxx">
             </div>
-            <button type="submit" class="btn btn-primary w-100">Simpan Siswa</button>
+            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save"></i> Simpan</button>
           </form>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal Lihat Foto -->
+  <!-- Image Modal -->
   <div class="modal fade" id="imageModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Bukti Foto</h5>
+          <h5 class="modal-title">Gambar</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body text-center">
-          <img id="modalImage" src="" class="img-fluid rounded" alt="Bukti">
+          <img id="modalImage" src="" class="img-fluid" alt="Gambar">
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Toast Notifikasi -->
+  <!-- Toast Notifications -->
   <div class="toast-container position-fixed top-0 end-0 p-3">
     <div id="toast" class="toast" role="alert">
       <div class="toast-header">

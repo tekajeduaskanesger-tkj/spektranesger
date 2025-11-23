@@ -1,45 +1,53 @@
-// admin.js — Firebase Version + Login cuma password
+// admin.js — VERSI FINAL 100% SESUAI PERMINTAANMU
+// Login cuma password | Semua data realtime Firebase | Bisa dari device lain
+
+const ADMIN_PASSWORD = "admin123";  // GANTI DI SINI AJA KALAU MAU UBAH PASSWORD!!
 
 let chartInstance = null;
 
 function showToast(msg, type = 'success') {
-  document.getElementById('toast-message').textContent = msg;
-  const toast = document.getElementById('toast');
-  toast.className = `toast align-items-center text-white bg-${type} border-0`;
-  new bootstrap.Toast(toast).show();
+  const toastEl = document.getElementById('liveToast') || createToastElement();
+  document.getElementById('toast-body').textContent = msg;
+  toastEl.className = `toast align-items-center text-bg-${type === 'danger' ? 'danger' : 'success'} border-0`;
+  new bootstrap.Toast(toastEl).show();
 }
 
-// Ganti password di sini aja kalau mau ubah
-const ADMIN_PASSWORD = "admin123";
+function createToastElement() {
+  const div = document.createElement('div');
+  div.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+  div.innerHTML = `
+    <div id="liveToast" class="toast" role="alert">
+      <div class="toast-header">
+        <strong class="me-auto">Notifikasi</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+      </div>
+      <div class="toast-body" id="toast-body"></div>
+    </div>
+  `;
+  document.body.appendChild(div);
+  return document.getElementById('liveToast');
+}
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Theme
-  const savedTheme = localStorage.getItem('theme') || 'light';
-  document.body.classList.toggle('dark-mode', savedTheme === 'dark');
-  document.getElementById('toggle-theme').checked = savedTheme === 'dark';
-  document.getElementById('toggle-theme').addEventListener('change', e => {
-    const theme = e.target.checked ? 'dark' : 'light';
-    document.body.classList.toggle('dark-mode', theme === 'dark');
-    localStorage.setItem('theme', theme);
-  });
 
-  // Toggle password visibility
+  // Toggle show/hide password
   document.getElementById('toggle-admin-password').addEventListener('click', () => {
-    const input = document.getElementById('admin-password');
+    const pass = document.getElementById('admin-password');
     const icon = document.getElementById('toggle-admin-password');
-    if (input.type === 'password') {
-      input.type = 'text';
+    if (pass.type === 'password') {
+      pass.type = 'text';
       icon.classList.replace('bi-eye', 'bi-eye-slash');
     } else {
-      input.type = 'password';
+      pass.type = 'password';
       icon.classList.replace('bi-eye-slash', 'bi-eye');
     }
   });
 
-  // Login admin (cuma password)
+  // LOGIN ADMIN — CUMA PASSWORD DOANG
   document.getElementById('admin-login-form').addEventListener('submit', e => {
     e.preventDefault();
-    if (document.getElementById('admin-password').value === ADMIN_PASSWORD) {
+    const inputPass = document.getElementById('admin-password').value;
+    if (inputPass === ADMIN_PASSWORD) {
       localStorage.setItem('adminLoggedIn', 'true');
       document.getElementById('login-section').style.display = 'none';
       document.getElementById('admin-content').style.display = 'block';
@@ -47,10 +55,11 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast('Login admin berhasil!', 'success');
     } else {
       showToast('Password salah!', 'danger');
+      document.getElementById('admin-password').value = '';
     }
   });
 
-  // Cek sudah login belum
+  // Auto login kalau sudah pernah masuk
   if (localStorage.getItem('adminLoggedIn') === 'true') {
     document.getElementById('login-section').style.display = 'none';
     document.getElementById('admin-content').style.display = 'block';
@@ -69,7 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Load semua data realtime
   function loadAllData() {
     loadLaporanFasilitas();
     loadAbsensiPiket();
@@ -77,68 +85,71 @@ document.addEventListener('DOMContentLoaded', () => {
     updateChart();
   }
 
+  // ==================== LAPORAN FASILITAS ====================
   function loadLaporanFasilitas() {
-    firebase.database().ref('laporan_fasilitas').on('value', snap => {
+    firebase.database().ref('laporan_fasilitas').on('value', snapshot => {
       const tbody = document.querySelector('#fasilitas-table tbody');
       tbody.innerHTML = '';
-      snap.forEach(child => {
-        const d = child.val();
+      snapshot.forEach(child => {
+        const data = child.val();
         const key = child.key;
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${d.nama}</td>
-          <td>${d.kelas || '-'}</td>
-          <td>${d.lokasi}</td>
-          <td>${d.kategori}</td>
-          <td><span class="badge bg-${d.prioritas === 'tinggi' ? 'danger' : d.prioritas === 'sedang' ? 'warning' : 'secondary'}">${d.prioritas}</span></td>
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${data.nama || '-'}</td>
+          <td>${data.kelas || '-'}</td>
+          <td>${data.lokasi}</td>
+          <td>${data.kategori}</td>
+          <td><span class="badge bg-${data.prioritas === 'tinggi' ? 'danger' : data.prioritas === 'sedang' ? 'warning' : 'info'}">${data.prioritas}</span></td>
           <td>
             <select class="form-select form-select-sm status-select" data-key="${key}">
-              <option value="baru" ${d.status === 'baru' ? 'selected' : ''}>Baru</option>
-              <option value="diproses" ${d.status === 'diproses' ? 'selected' : ''}>Diproses</option>
-              <option value="selesai" ${d.status === 'selesai' ? 'selected' : ''}>Selesai</option>
+              <option value="baru" ${data.status === 'baru' ? 'selected' : ''}>Baru</option>
+              <option value="diproses" ${data.status === 'diproses' ? 'selected' : ''}>Diproses</option>
+              <option value="selesai" ${data.status === 'selesai' ? 'selected' : ''}>Selesai</option>
             </select>
           </td>
-          <td><button class="btn btn-sm btn-info view-img" data-url="${d.foto}">Lihat</button></td>
-          <td>${d.tanggal}</td>
-          <td><button class="btn btn-sm btn-danger hapus" data-key="${key}" data-type="laporan_fasilitas">Hapus</button></td>
+          <td><button class="btn btn-sm btn-info view-img" data-url="${data.foto}">Lihat</button></td>
+          <td>${data.tanggal}</td>
+          <td><button class="btn btn-sm btn-danger hapus" data-type="laporan_fasilitas" data-key="${key}">Hapus</button></td>
         `;
-        tbody.appendChild(row);
+        tbody.appendChild(tr);
       });
       attachEventListeners();
     });
   }
 
+  // ==================== ABSENSI PIKET ====================
   function loadAbsensiPiket() {
-    firebase.database().ref('absensi_piket').on('value', snap => {
+    firebase.database().ref('absensi_piket').on('value', snapshot => {
       const tbody = document.querySelector('#piket-table tbody');
       tbody.innerHTML = '';
-      snap.forEach(child => {
-        const d = child.val();
+      snapshot.forEach(child => {
+        const data = child.val();
         const key = child.key;
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${d.nama}</td>
-          <td>${d.kelas || '-'}</td>
-          <td>${d.tanggal}</td>
-          <td>${d.waktu}</td>
-          <td><button class="btn btn-sm btn-info view-img" data-url="${d.foto}">Lihat</button></td>
-          <td><button class="btn btn-sm btn-danger hapus" data-key="${key}" data-type="absensi_piket">Hapus</button></td>
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${data.nama || '-'}</td>
+          <td>${data.kelas || '-'}</td>
+          <td>${data.tanggal}</td>
+          <td>${data.waktu}</td>
+          <td><button class="btn btn-sm btn-info view-img" data-url="${data.foto}">Lihat</button></td>
+          <td><button class="btn btn-sm btn-danger hapus" data-type="absensi_piket" data-key="${key}">Hapus</button></td>
         `;
-        tbody.appendChild(row);
+        tbody.appendChild(tr);
       });
       attachEventListeners();
     });
   }
 
+  // ==================== DAFTAR SISWA ====================
   function loadDaftarSiswa() {
-    firebase.database().ref('users').on('value', snap => {
+    firebase.database().ref('users').on('value', snapshot => {
       const tbody = document.querySelector('#siswa-table tbody');
       tbody.innerHTML = '';
-      snap.forEach(child => {
+      snapshot.forEach(child => {
         const user = child.val();
         if (user.username && user.username !== 'admin') {
-          const row = document.createElement('tr');
-          row.innerHTML = `
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
             <td>${user.username}</td>
             <td>${user.nama || '-'}</td>
             <td>${user.kelas || '-'}</td>
@@ -148,15 +159,16 @@ document.addEventListener('DOMContentLoaded', () => {
               <button class="btn btn-sm btn-danger hapus-siswa" data-username="${user.username}">Hapus</button>
             </td>
           `;
-          tbody.appendChild(row);
+          tbody.appendChild(tr);
         }
       });
       attachEventListeners();
     });
   }
 
+  // ==================== EVENT LISTENERS ====================
   function attachEventListeners() {
-    // Lihat gambar
+    // Lihat foto besar
     document.querySelectorAll('.view-img').forEach(btn => {
       btn.onclick = () => {
         document.getElementById('modalImage').src = btn.dataset.url;
@@ -164,23 +176,24 @@ document.addEventListener('DOMContentLoaded', () => {
       };
     });
 
-    // Ubah status
+    // Ubah status laporan
     document.querySelectorAll('.status-select').forEach(sel => {
       sel.onchange = () => {
         firebase.database().ref('laporan_fasilitas/' + sel.dataset.key).update({ status: sel.value });
+        showToast('Status diperbarui!');
       };
     });
 
-    // Hapus laporan/absensi
+    // Hapus data
     document.querySelectorAll('.hapus').forEach(btn => {
       btn.onclick = () => {
         Swal.fire({
-          title: 'Yakin hapus data ini?',
+          title: 'Yakin hapus?',
           icon: 'warning',
           showCancelButton: true,
           confirmButtonText: 'Ya, hapus!'
-        }).then(res => {
-          if (res.isConfirmed) {
+        }).then(result => {
+          if (result.isConfirmed) {
             firebase.database().ref(btn.dataset.type + '/' + btn.dataset.key).remove();
             showToast('Data dihapus!');
           }
@@ -208,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Tambah siswa
+  // ==================== TAMBAH / EDIT SISWA ====================
   document.getElementById('tambah-siswa').addEventListener('click', () => {
     document.getElementById('modalTitle').textContent = 'Tambah Siswa Baru';
     document.getElementById('form-siswa').reset();
@@ -216,7 +229,6 @@ document.addEventListener('DOMContentLoaded', () => {
     new bootstrap.Modal(document.getElementById('siswaModal')).show();
   });
 
-  // Simpan siswa
   document.getElementById('form-siswa').addEventListener('submit', e => {
     e.preventDefault();
     const username = document.getElementById('username').value.trim();
@@ -235,27 +247,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function editSiswa(username) {
     firebase.database().ref('users/' + username).once('value').then(snap => {
-      const user = snap.val();
+      const u = snap.val();
       document.getElementById('modalTitle').textContent = 'Edit Siswa';
-      document.getElementById('username').value = user.username;
+      document.getElementById('username').value = u.username;
       document.getElementById('username').readOnly = true;
-      document.getElementById('password').value = user.password;
-      document.getElementById('nama').value = user.nama;
-      document.getElementById('kelas').value = user.kelas;
-      document.getElementById('phone').value = user.phone || '';
+      document.getElementById('password').value = u.password;
+      document.getElementById('nama').value = u.nama;
+      document.getElementById('kelas').value = u.kelas;
+      document.getElementById('phone').value = u.phone || '';
       new bootstrap.Modal(document.getElementById('siswaModal')).show();
     });
   }
 
-  // Export
-  document.getElementById('export-laporan').addEventListener('click', () => exportToHTML('laporan_fasilitas', 'Laporan_Fasilitas_Rusak.html'));
-  document.getElementById('export-piket').addEventListener('click', () => exportToHTML('absensi_piket', 'Absensi_Piket.html'));
+  // ==================== EXPORT HTML ====================
+  document.getElementById('export-laporan').addEventListener('click', () => exportHTML('laporan_fasilitas', 'Laporan_Fasilitas.html'));
+  document.getElementById('export-piket').addEventListener('click', () => exportHTML('absensi_piket', 'Absensi_Piket.html'));
 
-  function exportToHTML(ref, filename) {
+  function exportHTML(ref, filename) {
     firebase.database().ref(ref).once('value').then(snap => {
       const data = [];
-      snap.forEach(child => data.push(child.val()));
-      const html = generateHTMLTable(data, ref);
+      snap.forEach(c => data.push(c.val()));
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${filename}</title><style>table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}th{background:#f0f0f0;}</style></head><body><h1>${filename}</h1><table><thead><tr>${Object.keys(data[0] || {}).map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${data.map(row => `<tr>${Object.values(row).map(v => v && v.includes('firebasestorage') ? `<td><img src="${v}" width="150"></td>` : `<td>${v || ''}</td>`).join('')}</tr>`).join('')}</tbody></table></body></html>`;
       const blob = new Blob([html], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -263,35 +275,50 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function generateHTMLTable(data, title) {
-    // (sama seperti sebelumnya, terlalu panjang → tetap pakai fungsi yang sudah ada di versi lama)
-    // Untuk hemat tempat, kamu bisa copy dari admin.js lama bagian convertToHTMLTable
-    // Atau pakai yang ini (singkat):
-    let rows = data.map(d => `<tr>${Object.values(d).map(v => v?.includes?.('firebasestorage') ? `<td><img src="${v}" width="100"></td>` : `<td>${v || ''}</td>`).join('')}</tr>`).join('');
-    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px}th{background:#f0f0f0}</style></head><body><h1>${title}</h1><table><tr>${Object.keys(data[0] || {}).map(h => `<th>${h}</th>`).join('')}</tr>${rows}</table></body></html>`;
-  }
-
-  // Chart
+  // ==================== CHART ====================
   function updateChart() {
     firebase.database().ref('laporan_fasilitas').once('value').then(snap => {
       const count = { baru: 0, diproses: 0, selesai: 0 };
-      snap.forEach(child => {
-        const status = child.val().status || 'baru';
-        count[status]++;
-      });
+      snap.forEach(child => count[child.val().status || 'baru']++);
       const ctx = document.getElementById('statusChart').getContext('2d');
       if (chartInstance) chartInstance.destroy();
       chartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
           labels: ['Baru', 'Diproses', 'Selesai'],
-          datasets: [{
-            data: [count.baru, count.diproses, count.selesai],
-            backgroundColor: ['#dc3545', '#ffc107', '#28a745']
-          }]
+          datasets: [{ data: [count.baru, count.diproses, count.selesai], backgroundColor: ['#dc3545', '#ffc107', '#28a745'] }]
         },
         options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
       });
     });
   }
 });
+
+// TAMBAH MODAL INI DI admin.html (kalau belum ada)
+const modalHTML = `
+<div class="modal fade" id="siswaModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title" id="modalTitle">Tambah Siswa</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <form id="form-siswa">
+          <div class="mb-3"><label>Username (NISN)</label><input type="text" class="form-control" id="username" required></div>
+          <div class="mb-3"><label>Password</label><input type="password" class="form-control" id="password" required></div>
+          <div class="mb-3"><label>Nama Lengkap</label><input type="text" class="form-control" id="nama" required></div>
+          <div class="mb-3"><label>Kelas</label><select class="form-select" id="kelas" required>${[...Array(9)].map((_,i)=>`<option value="X TKJ ${i+1}">X TKJ ${i+1}</option><option value="XI TKJ ${i+1}">XI TKJ ${i+1}</option><option value="XII TKJ ${i+1}">XII TKJ ${i+1}</option>`).join('').slice(0,-28)}</select></div>
+          <div class="mb-3"><label>No HP (opsional)</label><input type="tel" class="form-control" id="phone"></div>
+          <button type="submit" class="btn btn-primary w-100">Simpan</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="imageModal" tabindex="-1">
+  <div class="modal-dialog modal-lg"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Bukti Foto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body text-center"><img id="modalImage" src="" class="img-fluid rounded" alt="Foto"></div>
+  </div></div>
+</div>
+`;
+document.body.insertAdjacentHTML('beforeend', modalHTML);

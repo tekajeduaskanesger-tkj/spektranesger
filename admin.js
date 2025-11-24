@@ -438,7 +438,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const allClasses = [
       'X TKJ 1', 'X TKJ 2', 'X TKJ 3',
       'XI TKJ 1', 'XI TKJ 2', 'XI TKJ 3',
-      'XII TKJ 1', 'XII TKJ 2', 'XII TKJ 3'
+      'XII TKJ 1', 'XII TKJ 2', 'XII TKJ 3',
+      'X TSM 1', 'X TSM 2', 'X TSM 3',
+      'XI TSM 1', 'XI TSM 2', 'XI TSM 3',
+      'XII TSM 1', 'XII TSM 2', 'XII TSM 3',
+      'X AKL 1', 'X AKL 2', 'X AKL 3',
+      'XI AKL 1', 'XI AKL 2', 'XI AKL 3',
+      'XII AKL 1', 'XII AKL 2', 'XII AKL 3',
+      'X MP 1', 'X MP 2', 'XI MP 1',
+      'XI MP 2', 'XII MP 1', 'XII MP 2',
+      'X LPS 1', 'X LPS 2', 'XI LPS 1',
+      'XI LPS 2', 'XII LPS 1', 'XII LPS2'
     ];
 
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
@@ -660,3 +670,4 @@ document.addEventListener('DOMContentLoaded', async () => {
     return html;
   }
 });
+

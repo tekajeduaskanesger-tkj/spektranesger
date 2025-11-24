@@ -1,4 +1,6 @@
-// piket.js - Modifikasi untuk Firebase
+// Firebase Setup
+import { database } from './firebase-config.js';
+import { ref, set, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 function showToast(message, type = 'success') {
   const toast = document.getElementById('toast');
@@ -9,93 +11,125 @@ function showToast(message, type = 'success') {
   bsToast.show();
 }
 
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+  });
+}
+
 // Function to apply theme
 function applyTheme(theme) {
   if (theme === 'dark') {
     document.body.classList.add('dark-mode');
+    const toggleElement = document.getElementById('toggle-theme');
+    if (toggleElement) {
+      toggleElement.checked = true;
+    }
   } else {
     document.body.classList.remove('dark-mode');
+    const toggleElement = document.getElementById('toggle-theme');
+    if (toggleElement) {
+      toggleElement.checked = false;
+    }
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  // Apply theme
-  const savedTheme = localStorage.getItem('theme') || 'light';
-  applyTheme(savedTheme);
-  document.getElementById('toggle-theme').checked = savedTheme === 'dark';
+document.addEventListener('DOMContentLoaded', async function() {
+  try {
+    // Apply saved theme immediately
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    applyTheme(savedTheme);
 
-  // Toggle theme
-  document.getElementById('toggle-theme').addEventListener('change', (e) => {
-    const theme = e.target.checked ? 'dark' : 'light';
-    applyTheme(theme);
-    localStorage.setItem('theme', theme);
-  });
-
-  const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-  if (!currentUser) {
-    window.location.href = 'index.html';
-    return;
-  }
-
-  const namaPiket = document.getElementById('nama-piket');
-  const tanggalPiket = document.getElementById('tanggal-piket');
-  const fotoPiket = document.getElementById('foto-piket');
-  const previewPiket = document.getElementById('preview-piket');
-  const piketForm = document.getElementById('piket-form');
-
-  namaPiket.value = currentUser.nama || currentUser.username;
-  namaPiket.readOnly = true;
-
-  tanggalPiket.value = new Date().toISOString().split('T')[0];
-
-  // Preview foto
-  fotoPiket.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        previewPiket.src = e.target.result;
-        previewPiket.style.display = 'block';
-      };
-      reader.readAsDataURL(file);
-    } else {
-      previewPiket.style.display = 'none';
-    }
-  });
-
-  // Submit form
-  piketForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-
-    if (!fotoPiket.files[0]) return showToast('Mohon upload foto bukti piket!', 'warning');
-
-    const file = fotoPiket.files[0];
-    const storageRef = firebase.storage().ref('piket/' + Date.now() + '_' + file.name);
-
-    storageRef.put(file).then(() => {
-      return storageRef.getDownloadURL();
-    }).then((fotoURL) => {
-      const reportData = {
-        nama: namaPiket.value.trim(),
-        kelas: currentUser.kelas,
-        tanggal: tanggalPiket.value.trim(),
-        foto: fotoURL,
-        waktu: new Date().toLocaleTimeString('id-ID'),
-        timestamp: new Date().toISOString(),
-        username: currentUser.username
-      };
-
-      firebase.database().ref('absensi_piket').push(reportData).then(() => {
-        showToast('Absensi berhasil dikirim!');
-        piketForm.reset();
-        namaPiket.value = currentUser.nama || currentUser.username;
-        tanggalPiket.value = new Date().toISOString().split('T')[0];
-        previewPiket.style.display = 'none';
-      }).catch((err) => {
-        showToast('Gagal mengirim absensi!', 'danger');
+    // Toggle theme
+    const toggleTheme = document.getElementById('toggle-theme');
+    if (toggleTheme) {
+      toggleTheme.addEventListener('change', (e) => {
+        if (e.target.checked) {
+          document.body.classList.add('dark-mode');
+          localStorage.setItem('theme', 'dark');
+        } else {
+          document.body.classList.remove('dark-mode');
+          localStorage.setItem('theme', 'light');
+        }
       });
-    }).catch((err) => {
-      showToast('Gagal upload foto: ' + err.message, 'danger');
-    });
-  });
+    }
+
+    const piketForm = document.getElementById('piket-form');
+    const namaPiket = document.getElementById('nama-piket');
+    const tanggalPiket = document.getElementById('tanggal-piket');
+    const fotoPiket = document.getElementById('foto-piket');
+    const previewPiket = document.getElementById('preview-piket');
+
+    // Load student name from currentUser and set readonly
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (currentUser && currentUser.nama) {
+      namaPiket.value = currentUser.nama;
+      namaPiket.readOnly = true;
+    } else {
+      window.location.href = 'index.html';
+      return;
+    }
+
+    // Set default date to today
+    const today = new Date().toISOString().split('T')[0];
+    tanggalPiket.value = today;
+
+    // Preview image when selected
+    if (fotoPiket) {
+      fotoPiket.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            previewPiket.src = e.target.result;
+            previewPiket.style.display = 'block';
+          };
+          reader.readAsDataURL(file);
+        } else {
+          previewPiket.style.display = 'none';
+        }
+      });
+    }
+
+    // Handle form submission
+    if (piketForm) {
+      piketForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        if (!fotoPiket.files[0]) {
+          showToast('Mohon upload foto bukti piket!', 'warning');
+          return;
+        }
+
+        const reportData = {
+          nama: namaPiket.value.trim(),
+          kelas: currentUser.kelas,
+          tanggal: tanggalPiket.value.trim(),
+          foto: await fileToBase64(fotoPiket.files[0]),
+          waktu: new Date().toLocaleTimeString('id-ID'),
+          timestamp: new Date().toISOString(),
+          username: currentUser.username
+        };
+
+        try {
+          const newReportRef = push(ref(database, 'piketReports'));
+          await set(newReportRef, reportData);
+          showToast('Absensi berhasil dikirim!');
+          piketForm.reset();
+          namaPiket.value = currentUser.nama;
+          tanggalPiket.value = today;
+          previewPiket.style.display = 'none';
+        } catch (error) {
+          console.error('Error saving attendance:', error);
+          showToast('Gagal mengirim absensi!', 'danger');
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error initializing page:', error);
+    showToast('Terjadi kesalahan saat memuat halaman', 'danger');
+  }
 });

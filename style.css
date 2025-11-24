@@ -273,46 +273,144 @@ body.dark-mode .form-control[readonly] {
   color: #ffffff;
 }
 
-/* Tables */
+/* ============================================
+   TABLE STYLES - CRITICAL FIX FOR DARK MODE
+   ============================================ */
+
+/* Base table styles */
 .table {
   border-radius: 10px;
   overflow: hidden;
+  background-color: #ffffff;
+  color: #333333;
+}
+
+/* Table header */
+.table thead {
+  background-color: #667eea;
+  color: #ffffff !important;
 }
 
 .table th {
   background-color: #667eea;
-  color: white;
+  color: #ffffff !important;
   border: none;
   font-weight: 600;
+  padding: 12px;
+  vertical-align: middle;
 }
 
-/* Table body text - DEFAULT TO DARK for light mode */
+/* Light mode - DEFAULT TABLE TEXT MUST BE DARK */
 .table tbody {
-  color: #333333;
+  color: #333333 !important;
+  background-color: #ffffff;
 }
 
-.table td {
+.table tbody tr {
+  color: #333333 !important;
+  background-color: #ffffff;
+}
+
+.table tbody td {
   border-color: #e1e5e9;
-  color: #333333;
+  color: #333333 !important;
+  padding: 10px;
+  vertical-align: middle;
 }
 
-/* Dark mode table styling */
+/* Table striped effect in light mode */
+.table-striped tbody tr:nth-of-type(odd) {
+  background-color: #f8f9fa !important;
+  color: #333333 !important;
+}
+
+.table-striped tbody tr:nth-of-type(even) {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}
+
+/* Hover effect in light mode */
+.table-hover tbody tr:hover {
+  background-color: #e9ecef !important;
+  color: #333333 !important;
+  cursor: pointer;
+}
+
+/* ============================================
+   DARK MODE TABLE STYLES
+   ============================================ */
+
 body.dark-mode .table {
-  color: #ffffff;
+  color: #ffffff !important;
+  background-color: #2d3748;
 }
 
-body.dark-mode .table tbody {
-  color: #ffffff;
+/* Dark mode header */
+body.dark-mode .table thead {
+  background-color: #0a0f41;
 }
 
 body.dark-mode .table th {
   background-color: #0a0f41;
+  color: #ffffff !important;
+  border-color: #4a5568;
 }
 
-body.dark-mode .table td {
-  border-color: #4a5568;
-  color: #ffffff;
+/* Dark mode body - TEXT MUST BE WHITE */
+body.dark-mode .table tbody {
+  color: #ffffff !important;
+  background-color: #2d3748;
 }
+
+body.dark-mode .table tbody tr {
+  color: #ffffff !important;
+  background-color: #374151;
+}
+
+body.dark-mode .table tbody td {
+  border-color: #4a5568;
+  color: #ffffff !important;
+}
+
+/* Dark mode striped effect */
+body.dark-mode .table-striped tbody tr:nth-of-type(odd) {
+  background-color: #2d3748 !important;
+  color: #ffffff !important;
+}
+
+body.dark-mode .table-striped tbody tr:nth-of-type(even) {
+  background-color: #374151 !important;
+  color: #ffffff !important;
+}
+
+/* Dark mode hover effect */
+body.dark-mode .table-hover tbody tr:hover {
+  background-color: #4a5568 !important;
+  color: #ffffff !important;
+}
+
+/* Make sure ALL text inside table cells is visible */
+body.dark-mode .table tbody tr td,
+body.dark-mode .table tbody tr td * {
+  color: #ffffff !important;
+}
+
+/* Exception for badges - they have their own colors */
+body.dark-mode .table tbody tr td .badge {
+  color: #ffffff !important;
+}
+
+/* Form select inside tables */
+body.dark-mode .table tbody tr td .form-select,
+body.dark-mode .table tbody tr td .form-control {
+  background-color: #1a202c;
+  color: #ffffff;
+  border-color: #4a5568;
+}
+
+/* ============================================
+   END OF TABLE FIXES
+   ============================================ */
 
 /* Images */
 img {
@@ -495,15 +593,6 @@ body.dark-mode .table-responsive {
   background-color: #2d3748;
 }
 
-/* Ensure thead text is always visible */
-body.dark-mode thead {
-  color: #ffffff !important;
-}
-
-body.dark-mode thead th {
-  color: #ffffff !important;
-}
-
 /* Card statistics specific */
 body.dark-mode .text-center .card-title {
   color: #ffffff !important;
@@ -666,41 +755,6 @@ body.dark-mode .text-center h5 {
   color: #ffffff !important;
 }
 
-/* Table Styling for Dark Mode */
-body.dark-mode .table-striped tbody tr {
-  background-color: #374151;
-  color: #ffffff;
-}
-
-body.dark-mode .table-striped tbody tr:nth-of-type(odd) {
-  background-color: #2d3748;
-  color: #ffffff;
-}
-
-body.dark-mode .table-hover tbody tr:hover {
-  background-color: #4a5568;
-  color: #ffffff;
-}
-
-/* Light mode table styling - ensure dark text */
-.table-striped tbody tr {
-  color: #333333;
-}
-
-.table-striped tbody tr td {
-  color: #333333;
-}
-
-.table tbody tr td {
-  color: #333333;
-}
-
-/* Override any white text in light mode tables */
-body:not(.dark-mode) .table tbody tr,
-body:not(.dark-mode) .table tbody tr td {
-  color: #333333 !important;
-}
-
 /* Badge colors in dark mode */
 body.dark-mode .badge {
   color: #ffffff !important;
@@ -722,7 +776,7 @@ body.dark-mode input[type="date"]::placeholder,
 body.dark-mode input[type="tel"]::placeholder,
 body.dark-mode input[type="password"]::placeholder,
 body.dark-mode textarea::placeholder {
-  color: #0d0e10;
+  color: #9ca3af;
 }
 
 /* Textarea dalam dark mode */

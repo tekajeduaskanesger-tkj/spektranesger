@@ -18,13 +18,7 @@
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
           <li class="nav-item">
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-theme">
-              <span class="slider">
-                <i class="bi bi-moon moon"></i>
-                <i class="bi bi-sun sun"></i>
-              </span>
-            </label>
+            <button class="btn btn-outline-light me-2" id="toggle-theme"><i class="bi bi-moon"></i> Dark Mode</button>
           </li>
         </ul>
       </div>
@@ -51,6 +45,7 @@
               <div class="mb-3">
                 <label class="form-label">Kategori</label>
                 <select class="form-select" id="kategori-fasilitas" required>
+                  <option value="">Pilih Kategori</option>
                   <option value="Meja">Meja</option>
                   <option value="Kursi">Kursi</option>
                   <option value="Proyektor">Proyektor</option>
@@ -99,28 +94,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
-
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyCfnZZ8kLLs8qVuJVortXE759gXhl1VzGY",
-      authDomain: "spektranesger-2025.firebaseapp.com",
-      databaseURL: "https://spektranesger-2025-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "spektranesger-2025",
-      storageBucket: "spektranesger-2025.firebasestorage.app",
-      messagingSenderId: "608440457854",
-      appId: "1:608440457854:web:8d93b85f32fe12e6e3d62f",
-      measurementId: "G-GJNRK8Z094"
-    };
-    firebase.initializeApp(firebaseConfig);
-    console.log("Firebase ready in laporan.html");
-  </script>
-
-  <script src="laporan.js"></script>
+  <script type="module" src="laporan.js"></script>
 </body>
 </html>

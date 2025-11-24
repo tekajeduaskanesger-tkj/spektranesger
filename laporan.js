@@ -1,4 +1,6 @@
-// laporan.js - Modifikasi untuk Firebase
+// Firebase Setup
+import { database } from './firebase-config.js';
+import { ref, set, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 function showToast(message, type = 'success') {
   const toast = document.getElementById('toast');
@@ -19,109 +21,150 @@ function formatDate(date) {
   return [year, month, day].join('-');
 }
 
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+  });
+}
+
 // Function to apply theme
 function applyTheme(theme) {
   if (theme === 'dark') {
     document.body.classList.add('dark-mode');
+    const toggleBtn = document.getElementById('toggle-theme');
+    if (toggleBtn) {
+      toggleBtn.innerHTML = '<i class="bi bi-sun"></i> Mode Terang';
+    }
   } else {
     document.body.classList.remove('dark-mode');
+    const toggleBtn = document.getElementById('toggle-theme');
+    if (toggleBtn) {
+      toggleBtn.innerHTML = '<i class="bi bi-moon"></i> Mode Gelap';
+    }
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  // Apply theme
-  const savedTheme = localStorage.getItem('theme') || 'light';
-  applyTheme(savedTheme);
-  document.getElementById('toggle-theme').checked = savedTheme === 'dark';
+document.addEventListener('DOMContentLoaded', async function() {
+  try {
+    // Apply saved theme immediately
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    applyTheme(savedTheme);
 
-  // Toggle theme
-  document.getElementById('toggle-theme').addEventListener('change', (e) => {
-    const theme = e.target.checked ? 'dark' : 'light';
-    applyTheme(theme);
-    localStorage.setItem('theme', theme);
-  });
-
-  const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-  if (!currentUser) {
-    window.location.href = 'index.html';
-    return;
-  }
-
-  const namaFasilitas = document.getElementById('nama-fasilitas');
-  const lokasiFasilitas = document.getElementById('lokasi-fasilitas');
-  const kategoriFasilitas = document.getElementById('kategori-fasilitas');
-  const prioritasFasilitas = document.getElementById('prioritas-fasilitas');
-  const deskripsiFasilitas = document.getElementById('deskripsi-fasilitas');
-  const fotoFasilitas = document.getElementById('foto-fasilitas');
-  const previewFasilitas = document.getElementById('preview-fasilitas');
-  const customKategoriContainer = document.getElementById('custom-kategori-container');
-  const fasilitasForm = document.getElementById('fasilitas-form');
-
-  namaFasilitas.value = currentUser.nama || currentUser.username;
-  namaFasilitas.readOnly = true;
-
-  // Kategori lain
-  kategoriFasilitas.addEventListener('change', (e) => {
-    customKategoriContainer.style.display = e.target.value === 'Lainnya' ? 'block' : 'none';
-  });
-
-  // Preview foto
-  fotoFasilitas.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        previewFasilitas.src = e.target.result;
-        previewFasilitas.style.display = 'block';
-      };
-      reader.readAsDataURL(file);
-    } else {
-      previewFasilitas.style.display = 'none';
-    }
-  });
-
-  // Submit form
-  fasilitasForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-
-    let kategori = kategoriFasilitas.value;
-    if (kategori === 'Lainnya') {
-      kategori = document.getElementById('custom-kategori').value.trim();
-      if (!kategori) return showToast('Mohon isi kategori lainnya!', 'warning');
-    }
-
-    if (!fotoFasilitas.files[0]) return showToast('Mohon upload foto kerusakan!', 'warning');
-
-    const file = fotoFasilitas.files[0];
-    const storageRef = firebase.storage().ref('fasilitas/' + Date.now() + '_' + file.name);
-
-    storageRef.put(file).then(() => {
-      return storageRef.getDownloadURL();
-    }).then((fotoURL) => {
-      const reportData = {
-        nama: namaFasilitas.value.trim(),
-        kelas: currentUser.kelas,
-        lokasi: lokasiFasilitas.value.trim(),
-        kategori: kategori,
-        prioritas: prioritasFasilitas.value.trim(),
-        deskripsi: deskripsiFasilitas.value.trim(),
-        foto: fotoURL,
-        status: 'baru',
-        tanggal: formatDate(new Date()),
-        username: currentUser.username
-      };
-
-      firebase.database().ref('laporan_fasilitas').push(reportData).then(() => {
-        showToast('Laporan berhasil dikirim!');
-        fasilitasForm.reset();
-        namaFasilitas.value = currentUser.nama || currentUser.username;
-        previewFasilitas.style.display = 'none';
-        customKategoriContainer.style.display = 'none';
-      }).catch((err) => {
-        showToast('Gagal mengirim laporan!', 'danger');
+    // Toggle theme
+    const toggleBtn = document.getElementById('toggle-theme');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        if (document.body.classList.contains('dark-mode')) {
+          document.body.classList.remove('dark-mode');
+          localStorage.setItem('theme', 'light');
+          toggleBtn.innerHTML = '<i class="bi bi-moon"></i> Mode Gelap';
+        } else {
+          document.body.classList.add('dark-mode');
+          localStorage.setItem('theme', 'dark');
+          toggleBtn.innerHTML = '<i class="bi bi-sun"></i> Mode Terang';
+        }
       });
-    }).catch((err) => {
-      showToast('Gagal upload foto: ' + err.message, 'danger');
-    });
-  });
+    }
+
+    const fasilitasForm = document.getElementById('fasilitas-form');
+    const namaFasilitas = document.getElementById('nama-fasilitas');
+    const lokasiFasilitas = document.getElementById('lokasi-fasilitas');
+    const kategoriFasilitas = document.getElementById('kategori-fasilitas');
+    const prioritasFasilitas = document.getElementById('prioritas-fasilitas');
+    const deskripsiFasilitas = document.getElementById('deskripsi-fasilitas');
+    const fotoFasilitas = document.getElementById('foto-fasilitas');
+    const previewFasilitas = document.getElementById('preview-fasilitas');
+    const customKategoriContainer = document.getElementById('custom-kategori-container');
+
+    // Load student name from currentUser and set readonly
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (currentUser && currentUser.nama) {
+      namaFasilitas.value = currentUser.nama;
+      namaFasilitas.readOnly = true;
+    } else {
+      window.location.href = 'index.html';
+      return;
+    }
+
+    // Show/hide custom kategori field
+    if (kategoriFasilitas) {
+      kategoriFasilitas.addEventListener('change', function() {
+        if (this.value === 'Lainnya') {
+          customKategoriContainer.style.display = 'block';
+        } else {
+          customKategoriContainer.style.display = 'none';
+        }
+      });
+    }
+
+    // Preview image when selected
+    if (fotoFasilitas) {
+      fotoFasilitas.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            previewFasilitas.src = e.target.result;
+            previewFasilitas.style.display = 'block';
+          };
+          reader.readAsDataURL(file);
+        } else {
+          previewFasilitas.style.display = 'none';
+        }
+      });
+    }
+
+    // Handle form submission
+    if (fasilitasForm) {
+      fasilitasForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        let kategori = kategoriFasilitas.value;
+        if (kategori === 'Lainnya') {
+          kategori = document.getElementById('custom-kategori').value.trim();
+          if (!kategori) {
+            showToast('Mohon isi kategori lainnya!', 'warning');
+            return;
+          }
+        }
+
+        if (!fotoFasilitas.files[0]) {
+          showToast('Mohon upload foto kerusakan!', 'warning');
+          return;
+        }
+
+        const reportData = {
+          nama: namaFasilitas.value.trim(),
+          kelas: currentUser.kelas,
+          lokasi: lokasiFasilitas.value.trim(),
+          kategori: kategori,
+          prioritas: prioritasFasilitas.value.trim(),
+          deskripsi: deskripsiFasilitas.value.trim(),
+          foto: await fileToBase64(fotoFasilitas.files[0]),
+          status: 'baru',
+          tanggal: formatDate(new Date()),
+          username: currentUser.username
+        };
+
+        try {
+          const newReportRef = push(ref(database, 'fasilitasReports'));
+          await set(newReportRef, reportData);
+          showToast('Laporan berhasil dikirim!');
+          fasilitasForm.reset();
+          namaFasilitas.value = currentUser.nama;
+          previewFasilitas.style.display = 'none';
+          customKategoriContainer.style.display = 'none';
+        } catch (error) {
+          console.error('Error saving report:', error);
+          showToast('Gagal mengirim laporan!', 'danger');
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error initializing page:', error);
+    showToast('Terjadi kesalahan saat memuat halaman', 'danger');
+  }
 });

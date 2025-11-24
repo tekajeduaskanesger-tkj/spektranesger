@@ -2,6 +2,9 @@
 import { database } from './firebase-config.js';
 import { ref, set, get, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+console.log('Script.js loaded');
+console.log('Database:', database);
+
 function formatDate(date) {
   const d = new Date(date);
   let month = '' + (d.getMonth() + 1);
@@ -35,50 +38,20 @@ function showToast(message, type = 'success') {
   }
 }
 
-// Function to apply theme
-function applyTheme(theme) {
-  const toggleElement = document.getElementById('toggle-theme');
-  if (theme === 'dark') {
-    document.body.classList.add('dark-mode');
-    if (toggleElement) {
-      toggleElement.checked = true;
-    }
-  } else {
-    document.body.classList.remove('dark-mode');
-    if (toggleElement) {
-      toggleElement.checked = false;
-    }
-  }
-}
-
 document.addEventListener('DOMContentLoaded', async () => {
-  // Apply saved theme immediately
-  const savedTheme = localStorage.getItem('theme') || 'light';
-  applyTheme(savedTheme);
+  console.log('DOMContentLoaded - script.js');
 
   // Check if user is logged in
   const currentUser = localStorage.getItem('currentUser');
   if (currentUser) {
+    console.log('User already logged in:', currentUser);
     showUserDashboard(JSON.parse(currentUser));
   } else {
+    console.log('No user logged in');
     const authSection = document.getElementById('auth-section');
     if (authSection) {
       authSection.style.display = 'block';
     }
-  }
-
-  // Toggle theme with animation
-  const toggleTheme = document.getElementById('toggle-theme');
-  if (toggleTheme) {
-    toggleTheme.addEventListener('change', (e) => {
-      if (e.target.checked) {
-        document.body.classList.add('dark-mode');
-        localStorage.setItem('theme', 'dark');
-      } else {
-        document.body.classList.remove('dark-mode');
-        localStorage.setItem('theme', 'light');
-      }
-    });
   }
 
   // Scroll animations
@@ -94,32 +67,53 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Login form
   const loginForm = document.getElementById('login-form');
+  console.log('Login form found:', loginForm);
+  
   if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      console.log('Login form submitted');
+      
       const username = document.getElementById('login-username').value;
       const password = document.getElementById('login-password').value;
+      
+      console.log('Attempting login with username:', username);
 
       try {
         const userRef = ref(database, 'users/' + username);
+        console.log('Fetching user from Firebase...');
         const snapshot = await get(userRef);
         
-        if (snapshot.exists() && snapshot.val().password === password) {
+        console.log('Snapshot exists:', snapshot.exists());
+        
+        if (snapshot.exists()) {
           const userData = snapshot.val();
-          localStorage.setItem('currentUser', JSON.stringify(userData));
-          Toast.fire({
-            icon: "success",
-            title: "Signed in successfully"
-          });
-          setTimeout(() => {
-            window.location.href = 'home.html';
-          }, 1000);
+          console.log('User data:', userData);
+          
+          if (userData.password === password) {
+            console.log('Password correct! Logging in...');
+            localStorage.setItem('currentUser', JSON.stringify(userData));
+            
+            Toast.fire({
+              icon: "success",
+              title: "Login berhasil!"
+            });
+            
+            setTimeout(() => {
+              console.log('Redirecting to home.html');
+              window.location.href = 'home.html';
+            }, 1000);
+          } else {
+            console.log('Password incorrect');
+            showToast('Password salah!', 'danger');
+          }
         } else {
-          showToast('Username atau password salah!', 'danger');
+          console.log('User not found');
+          showToast('Username tidak ditemukan!', 'danger');
         }
       } catch (error) {
         console.error('Login error:', error);
-        showToast('Terjadi kesalahan saat login!', 'danger');
+        showToast('Terjadi kesalahan: ' + error.message, 'danger');
       }
     });
   }
@@ -128,6 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const logoutBtn = document.getElementById('logout-btn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
+      console.log('Logging out...');
       localStorage.removeItem('currentUser');
       location.reload();
     });
@@ -234,6 +229,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function showUserDashboard(user) {
+    console.log('Showing user dashboard for:', user);
     const authSection = document.getElementById('auth-section');
     const userDashboard = document.getElementById('user-dashboard');
     const formsSection = document.getElementById('forms-section');

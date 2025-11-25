@@ -80,6 +80,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('search-piket').addEventListener('input', () => loadPiket());
   document.getElementById('sort-piket').addEventListener('change', () => loadPiket());
 
+  // View history button
+  const viewHistoryBtn = document.getElementById('view-history');
+  if (viewHistoryBtn) {
+    viewHistoryBtn.addEventListener('click', () => {
+      window.location.href = 'riwayat.html';
+    });
+  }
+
   // Add student form
   document.getElementById('add-student-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -222,7 +230,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   async function loadStatistics() {
     try {
-      // Load fasilitas statistics
+      // Load fasilitas statistics (ALL reports including selesai)
       const fasilitasRef = ref(database, 'fasilitasReports');
       const fasilitasSnapshot = await get(fasilitasRef);
       
@@ -325,10 +333,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       let reports = [];
       if (snapshot.exists()) {
         snapshot.forEach((childSnapshot) => {
-          reports.push({
-            id: childSnapshot.key,
-            ...childSnapshot.val()
-          });
+          const report = childSnapshot.val();
+          // ONLY SHOW reports that are NOT 'selesai'
+          if (report.status !== 'selesai') {
+            reports.push({
+              id: childSnapshot.key,
+              ...report
+            });
+          }
         });
       }
 
@@ -362,13 +374,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           <td><span class="badge bg-${item.prioritas === 'tinggi' ? 'danger' : item.prioritas === 'sedang' ? 'warning' : 'success'}">${item.prioritas || 'rendah'}</span></td>
           <td>${item.deskripsi}</td>
           <td><img src="${item.foto}" alt="Foto Fasilitas" style="width: 50px; cursor: pointer;" onclick="showImageModal('${item.foto}')"></td>
-          <td><span class="badge bg-${item.status === 'selesai' ? 'success' : item.status === 'diproses' ? 'warning' : 'secondary'}">${item.status}</span></td>
+          <td><span class="badge bg-${item.status === 'diproses' ? 'warning' : 'secondary'}">${item.status}</span></td>
           <td>${item.tanggal}</td>
           <td>
             <select class="form-select form-select-sm" onchange="updateStatus('${item.id}', this.value)">
               <option value="baru" ${item.status === 'baru' ? 'selected' : ''}>Baru</option>
               <option value="diproses" ${item.status === 'diproses' ? 'selected' : ''}>Diproses</option>
-              <option value="selesai" ${item.status === 'selesai' ? 'selected' : ''}>Selesai</option>
+              <option value="selesai">Selesai</option>
             </select>
           </td>
         `;
@@ -448,7 +460,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       'X MP 1', 'X MP 2', 'XI MP 1',
       'XI MP 2', 'XII MP 1', 'XII MP 2',
       'X LPS 1', 'X LPS 2', 'XI LPS 1',
-      'XI LPS 2', 'XII LPS 1', 'XII LPS2'
+      'XI LPS 2', 'XII LPS 1', 'XII LPS 2'
     ];
 
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
@@ -477,12 +489,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (snapshot.exists()) {
         const report = snapshot.val();
         report.status = status;
+        
+        // Add completion timestamp when marked as selesai
+        if (status === 'selesai') {
+          report.completedAt = new Date().toISOString();
+        }
+        
         await set(reportRef, report);
         
         Toast.fire({
           icon: "success",
-          title: "Status berhasil diperbarui!"
+          title: status === 'selesai' ? "Laporan selesai! Dipindahkan ke riwayat." : "Status berhasil diperbarui!"
         });
+        
         loadFasilitas();
         loadStatistics();
         loadChart();
@@ -670,4 +689,3 @@ document.addEventListener('DOMContentLoaded', async () => {
     return html;
   }
 });
-

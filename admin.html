@@ -172,14 +172,14 @@
               <!-- Laporan Fasilitas Table -->
               <div class="card mb-4">
                 <div class="card-header bg-warning text-dark">
-                  <h5 class="mb-0"><i class="bi bi-tools"></i> Laporan Fasilitas</h5>
+                  <h5 class="mb-0"><i class="bi bi-tools"></i> Laporan Fasilitas (Aktif)</h5>
                 </div>
                 <div class="card-body">
                   <div class="row mb-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                       <input type="text" class="form-control" id="search-fasilitas" placeholder="Cari...">
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                       <select class="form-select" id="sort-fasilitas">
                         <option value="">Urutkan</option>
                         <option value="nama">Nama</option>
@@ -187,8 +187,11 @@
                         <option value="status">Status</option>
                       </select>
                     </div>
-                    <div class="col-md-4">
-                      <button class="btn btn-success" id="export-fasilitas"><i class="bi bi-download"></i> Export HTML</button>
+                    <div class="col-md-3">
+                      <button class="btn btn-success w-100" id="export-fasilitas"><i class="bi bi-download"></i> Export HTML</button>
+                    </div>
+                    <div class="col-md-3">
+                      <button class="btn btn-info w-100" id="view-history"><i class="bi bi-clock-history"></i> Lihat Riwayat</button>
                     </div>
                   </div>
                   <div class="table-responsive">
@@ -457,5 +460,3 @@
   <script type="module" src="admin.js"></script>
 </body>
 </html>
-
-
